@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { AdminOrders } from '../components/ui/admin/AdminOrders';
+import { CostingCalculator } from '../components/ui/admin/CostingCalculator';
 import { IngredientToggles } from '../components/ui/admin/IngredientToggles';
 import { NoteEditor } from '../components/ui/admin/NoteEditor';
 import { PerfumeEditor } from '../components/ui/admin/PerfumeEditor';
@@ -88,8 +89,15 @@ export function AdminPage() {
         </Section>
 
         <Section
+          title="Costing & margins"
+          hint="What-if calculator using your Chemworld supplier rates — see cost, taxes, and profit for any size, strength, solvent, and oil grade."
+        >
+          <CostingCalculator />
+        </Section>
+
+        <Section
           title="Orders"
-          hint="Every order across all customers. Status changes are visible in the customer's order history immediately."
+          hint="Every order across all customers. Status changes are visible in the customer's order history immediately. Costs assume regular-grade oil."
         >
           <AdminOrders />
         </Section>

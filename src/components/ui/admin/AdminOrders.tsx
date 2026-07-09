@@ -6,6 +6,7 @@ import {
   updateOrderStatus,
   type AdminOrderRecord,
 } from '../../../lib/catalog';
+import { orderItemCost } from '../../../lib/costing';
 import { formatPeso } from '../../../lib/pricing';
 
 const dateFormat = new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium', timeStyle: 'short' });
@@ -97,17 +98,32 @@ export function AdminOrders() {
                   <em className="font-display text-sm text-neutral-800 dark:text-cream">
                     {item.name}
                   </em>{' '}
-                  · {item.bottleSize} mL · {item.concentration ?? 15}% oil × {item.qty}
+                  · {item.bottleSize} mL · {item.concentration ?? 15}% oil ·{' '}
+                  {(item.solvent ?? 'alcohol') === 'alcohol' ? 'alcohol' : 'Easyblend'} × {item.qty}
                 </span>
                 <span>{formatPeso(item.unitPrice * item.qty)}</span>
               </li>
             ))}
           </ul>
 
-          <div className="mt-3 flex items-baseline justify-between border-t border-ivory-line/70 pt-3 dark:border-night-line">
-            <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">Total</span>
-            <span className="font-display text-xl text-neutral-900 dark:text-cream">
-              {formatPeso(order.total)}
+          <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 border-t border-ivory-line/70 pt-3 dark:border-night-line">
+            {(() => {
+              const estCost = order.items.reduce((sum, item) => sum + orderItemCost(item), 0);
+              const profit = order.total - estCost;
+              return (
+                <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
+                  Est. cost {formatPeso(Math.round(estCost))} ·{' '}
+                  <span className={profit >= 0 ? 'text-gold-deep dark:text-gold' : 'text-red-400'}>
+                    profit {formatPeso(Math.round(profit))}
+                  </span>
+                </span>
+              );
+            })()}
+            <span className="flex items-baseline gap-2">
+              <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">Total</span>
+              <span className="font-display text-xl text-neutral-900 dark:text-cream">
+                {formatPeso(order.total)}
+              </span>
             </span>
           </div>
         </li>

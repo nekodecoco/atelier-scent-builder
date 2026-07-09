@@ -84,6 +84,7 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
               name: scent.name,
               bottleSize: size,
               concentration: DEFAULT_CONCENTRATION,
+              solvent: 'alcohol',
               unitPrice: PRICE_BY_SIZE[size],
               formula: scent.formula,
             })

@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import { FlaskConical } from 'lucide-react';
 import { getIngredient, NOTE_LABELS } from '../../data/ingredients';
 import { inkFor } from '../../lib/color';
-import { formatPeso, PRICE_BY_SIZE } from '../../lib/pricing';
+import { formatPeso, priceFor } from '../../lib/pricing';
 import {
   BOTTLE_SIZES,
   computeRecipe,
@@ -53,7 +53,7 @@ export function RecipeCalculator() {
             >
               {BOTTLE_SIZES.map((size) => (
                 <option key={size} value={size}>
-                  {size} mL · {formatPeso(PRICE_BY_SIZE[size])}
+                  {size} mL · {formatPeso(priceFor(size, concentration))}
                 </option>
               ))}
             </select>

@@ -1,6 +1,6 @@
 import { Droplets, RotateCcw, ShoppingBag } from 'lucide-react';
 import { NOTE_KEYS, NOTE_TAGLINES } from '../../data/ingredients';
-import { formatPeso, PRICE_BY_SIZE } from '../../lib/pricing';
+import { formatPeso, priceFor } from '../../lib/pricing';
 import { useCartStore } from '../../store/useCartStore';
 import { useScentStore } from '../../store/useScentStore';
 import { Scene } from '../three/Scene';
@@ -14,18 +14,20 @@ import { ScentTwinCard } from './ScentTwinCard';
 export function ScentBuilder() {
   const resetBlend = useScentStore((s) => s.resetBlend);
   const bottleSize = useScentStore((s) => s.bottleSize);
+  const concentration = useScentStore((s) => s.concentration);
   const blended = useScentStore((s) => s.blended);
   const toggleBlended = useScentStore((s) => s.toggleBlended);
   const addItem = useCartStore((s) => s.addItem);
 
   const addBlendToCart = () => {
-    const { customName, selected, percentages, concentration } = useScentStore.getState();
+    const { customName, selected, percentages, solvent } = useScentStore.getState();
     addItem({
       kind: 'custom',
       name: customName.trim() || 'Unnamed Blend',
       bottleSize,
       concentration,
-      unitPrice: PRICE_BY_SIZE[bottleSize],
+      solvent,
+      unitPrice: priceFor(bottleSize, concentration),
       formula: { selected: { ...selected }, percentages: { ...percentages } },
     });
   };
@@ -100,7 +102,7 @@ export function ScentBuilder() {
             className="flex items-center justify-center gap-2 rounded bg-gold-deep px-4 py-4 font-sans text-[11px] tracking-luxe text-ivory transition-opacity hover:opacity-90 dark:bg-gold dark:text-night"
           >
             <ShoppingBag size={14} aria-hidden />
-            ADD TO CART · {bottleSize} ML · {formatPeso(PRICE_BY_SIZE[bottleSize])}
+            ADD TO CART · {bottleSize} ML · {concentration}% · {formatPeso(priceFor(bottleSize, concentration))}
           </button>
         </div>
       </div>

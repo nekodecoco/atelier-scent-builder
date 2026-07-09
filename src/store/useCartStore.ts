@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ScentFormula } from '../data/premadeScents';
-import type { BottleSize } from '../lib/recipe';
+import type { BottleSize, Solvent } from '../lib/recipe';
 
 export interface CartItem {
   id: string;
@@ -10,6 +10,8 @@ export interface CartItem {
   bottleSize: BottleSize;
   /** Fragrance oil %, absent on items carted before this field existed (= 15) */
   concentration?: number;
+  /** Solvent base, absent on older items (= alcohol) */
+  solvent?: Solvent;
   qty: number;
   unitPrice: number;
   formula: ScentFormula;
@@ -48,6 +50,7 @@ export const useCartStore = create<CartState>()(
               i.name === item.name &&
               i.bottleSize === item.bottleSize &&
               (i.concentration ?? 15) === (item.concentration ?? 15) &&
+              (i.solvent ?? 'alcohol') === (item.solvent ?? 'alcohol') &&
               JSON.stringify(i.formula) === JSON.stringify(item.formula),
           );
           if (existing) {
