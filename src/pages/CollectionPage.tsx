@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, SlidersHorizontal } from 'lucide-react';
 import { BottlePreview } from '../components/ui/BottlePreview';
+import { Reveal } from '../components/ui/Reveal';
 import { getIngredient, NOTE_KEYS } from '../data/ingredients';
 import { PREMADE_SCENTS, type PremadeScent } from '../data/premadeScents';
 import { inkFor } from '../lib/color';
@@ -25,8 +26,8 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
   };
 
   return (
-    <article className="flex flex-col rounded-lg border border-ivory-line bg-white/60 p-6 dark:border-night-line dark:bg-night-soft">
-      <div className="flex h-44 items-center justify-center">
+    <article className="group flex w-full flex-col rounded-lg border border-ivory-line bg-white/60 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-gold-deep/40 hover:shadow-xl hover:shadow-black/5 dark:border-night-line dark:bg-night-soft dark:hover:border-gold/30 dark:hover:shadow-black/40">
+      <div className="flex h-44 items-center justify-center transition-transform duration-500 group-hover:scale-[1.04]">
         <BottlePreview formula={scent.formula} name={scent.name} />
       </div>
 
@@ -105,7 +106,29 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
   );
 }
 
+function SkeletonCard() {
+  return (
+    <div className="animate-pulse rounded-lg border border-ivory-line bg-white/40 p-6 dark:border-night-line dark:bg-night-soft">
+      <div className="mx-auto h-44 w-24 rounded bg-ivory-soft dark:bg-night-card" />
+      <div className="mt-5 h-2.5 w-24 rounded bg-ivory-soft dark:bg-night-card" />
+      <div className="mt-3 h-6 w-40 rounded bg-ivory-soft dark:bg-night-card" />
+      <div className="mt-3 h-2.5 w-full rounded bg-ivory-soft dark:bg-night-card" />
+      <div className="mt-2 h-2.5 w-3/4 rounded bg-ivory-soft dark:bg-night-card" />
+      <div className="mt-6 h-11 w-full rounded bg-ivory-soft dark:bg-night-card" />
+    </div>
+  );
+}
+
 export function CollectionPage() {
+  const loaded = useCatalogStore((s) => s.loaded);
+  const hiddenPremades = useCatalogStore((s) => s.hiddenPremades);
+  const customPremades = useCatalogStore((s) => s.customPremades);
+
+  const visible = [
+    ...PREMADE_SCENTS.filter((scent) => !hiddenPremades[scent.id]),
+    ...customPremades,
+  ];
+
   return (
     <section className="mx-auto max-w-6xl px-5 pb-24 pt-32">
       <p className="font-sans text-[11px] tracking-luxe text-gold-deep dark:text-gold">THE COLLECTION</p>
@@ -113,15 +136,25 @@ export function CollectionPage() {
         Premade signatures
       </h1>
       <p className="mt-3 max-w-lg font-sans text-sm leading-relaxed text-stone">
-        Six house blends, composed by our perfumers. Take one as it is — or press
+        House blends composed by our perfumers. Take one as it is — or press
         remix and make it yours in the scent builder.
       </p>
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {PREMADE_SCENTS.map((scent) => (
-          <PremadeCard key={scent.id} scent={scent} />
-        ))}
+        {!loaded
+          ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)
+          : visible.map((scent, i) => (
+              <Reveal key={scent.id} delay={(i % 3) * 90} className="flex">
+                <PremadeCard scent={scent} />
+              </Reveal>
+            ))}
       </div>
+
+      {loaded && visible.length === 0 && (
+        <p className="mt-12 text-center font-display text-xl italic text-stone">
+          The collection is being recomposed — check back soon.
+        </p>
+      )}
     </section>
   );
 }

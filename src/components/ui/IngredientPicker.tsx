@@ -6,10 +6,16 @@ export function IngredientPicker({ note }: { note: NoteKey }) {
   const selectedId = useScentStore((s) => s.selected[note]);
   const selectIngredient = useScentStore((s) => s.selectIngredient);
   const availability = useCatalogStore((s) => s.availability);
+  const custom = useCatalogStore((s) => s.customIngredients[note]);
+
+  const merged = [
+    ...INGREDIENTS[note].map((i) => ({ ...i, isCustom: false })),
+    ...custom.map((i) => ({ ...i, isCustom: true })),
+  ];
 
   return (
     <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={`${note} note ingredients`}>
-      {INGREDIENTS[note].map((ingredient) => {
+      {merged.map((ingredient) => {
         const selected = ingredient.id === selectedId;
         const available = availability[ingredient.id] !== false;
         return (
@@ -29,6 +35,11 @@ export function IngredientPicker({ note }: { note: NoteKey }) {
             }`}
             style={selected && available ? { backgroundColor: ingredient.color } : undefined}
           >
+            {ingredient.isCustom && (
+              <span aria-hidden className="mr-1 text-[9px] text-gold-deep dark:text-gold">
+                ★
+              </span>
+            )}
             {ingredient.name}
           </button>
         );

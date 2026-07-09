@@ -187,7 +187,25 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
   ],
 };
 
+/**
+ * Admin-created ingredients live in Supabase and are registered here at
+ * runtime so non-React code (3D liquid colors, recipe math, previews) can
+ * resolve them through the same lookup as the built-ins.
+ */
+const customRegistry: Record<NoteKey, Ingredient[]> = { top: [], heart: [], base: [] };
+
+export function registerCustomIngredients(byNote: Record<NoteKey, Ingredient[]>): void {
+  for (const note of NOTE_KEYS) customRegistry[note] = byNote[note] ?? [];
+}
+
+export function getCustomIngredients(note: NoteKey): Ingredient[] {
+  return customRegistry[note];
+}
+
 export function getIngredient(note: NoteKey, id: string): Ingredient {
-  const found = INGREDIENTS[note].find((i) => i.id === id);
-  return found ?? INGREDIENTS[note][0];
+  return (
+    INGREDIENTS[note].find((i) => i.id === id) ??
+    customRegistry[note].find((i) => i.id === id) ??
+    INGREDIENTS[note][0]
+  );
 }

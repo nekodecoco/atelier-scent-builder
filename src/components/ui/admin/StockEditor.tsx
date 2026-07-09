@@ -62,9 +62,11 @@ function StockRow({ scentId, name, tagline }: { scentId: string; name: string; t
 }
 
 export function StockEditor() {
+  const customPremades = useCatalogStore((s) => s.customPremades);
+
   return (
     <ul className="rounded-lg border border-ivory-line bg-white/60 px-5 dark:border-night-line dark:bg-night-soft">
-      {PREMADE_SCENTS.map((scent) => (
+      {[...PREMADE_SCENTS, ...customPremades].map((scent) => (
         <StockRow key={scent.id} scentId={scent.id} name={scent.name} tagline={scent.tagline} />
       ))}
     </ul>

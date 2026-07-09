@@ -114,6 +114,51 @@ insert into public.admins (user_id)
 
 After running it, sign in with that account and an **ADMIN** link appears in the header.
 
+## Custom notes and perfumes
+
+Lets the admin add their own builder ingredients and premade perfumes, and hide
+built-in house blends. Run in **SQL Editor**:
+
+```sql
+-- admin-created builder ingredients
+create table public.custom_ingredients (
+  id uuid primary key default gen_random_uuid(),
+  note text not null check (note in ('top','heart','base')),
+  name text not null,
+  description text not null default '',
+  color text not null default '#c9a53a',
+  scent_twins jsonb not null default '[]',
+  created_at timestamptz not null default now()
+);
+alter table public.custom_ingredients enable row level security;
+create policy "public read custom ingredients" on public.custom_ingredients
+  for select using (true);
+create policy "admin write custom ingredients" on public.custom_ingredients
+  for all
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+-- admin-created premade perfumes
+create table public.custom_premades (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  tagline text not null default '',
+  description text not null default '',
+  formula jsonb not null,
+  created_at timestamptz not null default now()
+);
+alter table public.custom_premades enable row level security;
+create policy "public read custom premades" on public.custom_premades
+  for select using (true);
+create policy "admin write custom premades" on public.custom_premades
+  for all
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+-- built-in house blends can now be hidden from the collection
+alter table public.premade_stock add column hidden boolean not null default false;
+```
+
 ## Updating an order's status
 
 Orders start as `pending`. To update one after you've mixed/shipped it, run in SQL Editor:

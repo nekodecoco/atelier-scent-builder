@@ -48,6 +48,8 @@ function Toggle({ ingredientId, name }: { ingredientId: string; name: string }) 
 }
 
 export function IngredientToggles() {
+  const custom = useCatalogStore((s) => s.customIngredients);
+
   return (
     <div className="flex flex-col gap-5">
       {NOTE_KEYS.map((note) => (
@@ -59,7 +61,7 @@ export function IngredientToggles() {
             {NOTE_LABELS[note]}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {INGREDIENTS[note].map((ingredient) => (
+            {[...INGREDIENTS[note], ...custom[note]].map((ingredient) => (
               <Toggle key={ingredient.id} ingredientId={ingredient.id} name={ingredient.name} />
             ))}
           </div>
