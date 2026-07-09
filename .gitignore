@@ -6,3 +6,6 @@ dist/
 .claude/
 .vercel/
 *.log
+
+.vercel
+.env*
