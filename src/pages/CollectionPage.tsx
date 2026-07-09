@@ -7,7 +7,7 @@ import { getIngredient, NOTE_KEYS } from '../data/ingredients';
 import { PREMADE_SCENTS, type PremadeScent } from '../data/premadeScents';
 import { inkFor } from '../lib/color';
 import { formatPeso, PRICE_BY_SIZE } from '../lib/pricing';
-import { BOTTLE_SIZES, type BottleSize } from '../lib/recipe';
+import { BOTTLE_SIZES, DEFAULT_CONCENTRATION, type BottleSize } from '../lib/recipe';
 import { useCartStore } from '../store/useCartStore';
 import { useCatalogStore } from '../store/useCatalogStore';
 import { useScentStore } from '../store/useScentStore';
@@ -83,6 +83,7 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
               kind: 'premade',
               name: scent.name,
               bottleSize: size,
+              concentration: DEFAULT_CONCENTRATION,
               unitPrice: PRICE_BY_SIZE[size],
               formula: scent.formula,
             })

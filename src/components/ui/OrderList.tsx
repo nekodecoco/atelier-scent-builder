@@ -83,7 +83,7 @@ export function OrderList() {
                   <em className="font-display text-sm text-neutral-800 dark:text-cream">
                     {item.name}
                   </em>{' '}
-                  · {item.bottleSize} mL × {item.qty}
+                  · {item.bottleSize} mL · {item.concentration ?? 15}% oil × {item.qty}
                 </span>
                 <span>{formatPeso(item.unitPrice * item.qty)}</span>
               </li>

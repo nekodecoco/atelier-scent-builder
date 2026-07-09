@@ -39,7 +39,7 @@ function CartLine({ item }: { item: CartItem }) {
         </div>
         <div className="mt-1 font-sans text-[10px] uppercase tracking-wider text-stone-dim">
           {item.kind === 'custom' ? 'Custom blend' : 'House blend'} · {item.bottleSize} mL ·{' '}
-          {formatPeso(item.unitPrice)} each
+          {item.concentration ?? 15}% oil · {formatPeso(item.unitPrice)} each
         </div>
         <div className="mt-2.5 flex items-center gap-2">
           <button

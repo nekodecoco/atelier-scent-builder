@@ -19,11 +19,12 @@ export function ScentBuilder() {
   const addItem = useCartStore((s) => s.addItem);
 
   const addBlendToCart = () => {
-    const { customName, selected, percentages } = useScentStore.getState();
+    const { customName, selected, percentages, concentration } = useScentStore.getState();
     addItem({
       kind: 'custom',
       name: customName.trim() || 'Unnamed Blend',
       bottleSize,
+      concentration,
       unitPrice: PRICE_BY_SIZE[bottleSize],
       formula: { selected: { ...selected }, percentages: { ...percentages } },
     });

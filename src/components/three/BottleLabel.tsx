@@ -1,12 +1,18 @@
 import { useEffect, useMemo } from 'react';
 import { CanvasTexture, SRGBColorSpace } from 'three';
+import { concentrationTier } from '../../lib/recipe';
 import { useScentStore } from '../../store/useScentStore';
 import { BODY } from './bottleDimensions';
 
 const LABEL_W = 512;
 const LABEL_H = 414;
 
-function drawLabel(canvas: HTMLCanvasElement, name: string, bottleSize: number) {
+function drawLabel(
+  canvas: HTMLCanvasElement,
+  name: string,
+  bottleSize: number,
+  concentration: number,
+) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
@@ -41,7 +47,7 @@ function drawLabel(canvas: HTMLCanvasElement, name: string, bottleSize: number) 
   ctx.fillStyle = '#8a8272';
   if ('letterSpacing' in ctx) (ctx as CanvasRenderingContext2D).letterSpacing = '5px';
   ctx.font = '500 22px Inter, system-ui, sans-serif';
-  ctx.fillText('EAU DE PARFUM', LABEL_W / 2, LABEL_H * 0.685);
+  ctx.fillText(concentrationTier(concentration).toUpperCase(), LABEL_W / 2, LABEL_H * 0.685);
   ctx.font = '500 20px Inter, system-ui, sans-serif';
   ctx.fillText(`${bottleSize} ML`, LABEL_W / 2, LABEL_H * 0.775);
   if ('letterSpacing' in ctx) (ctx as CanvasRenderingContext2D).letterSpacing = '0px';
@@ -60,8 +66,8 @@ export function BottleLabel() {
 
   useEffect(() => {
     const draw = () => {
-      const { customName, bottleSize } = useScentStore.getState();
-      drawLabel(canvas, customName, bottleSize);
+      const { customName, bottleSize, concentration } = useScentStore.getState();
+      drawLabel(canvas, customName, bottleSize, concentration);
       texture.needsUpdate = true;
     };
 
@@ -70,7 +76,12 @@ export function BottleLabel() {
     document.fonts?.ready.then(draw).catch(() => {});
 
     const unsubscribe = useScentStore.subscribe((state, prev) => {
-      if (state.customName !== prev.customName || state.bottleSize !== prev.bottleSize) draw();
+      if (
+        state.customName !== prev.customName ||
+        state.bottleSize !== prev.bottleSize ||
+        state.concentration !== prev.concentration
+      )
+        draw();
     });
     return unsubscribe;
   }, [canvas, texture]);

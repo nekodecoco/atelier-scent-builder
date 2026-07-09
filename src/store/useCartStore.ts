@@ -8,6 +8,8 @@ export interface CartItem {
   kind: 'custom' | 'premade';
   name: string;
   bottleSize: BottleSize;
+  /** Fragrance oil %, absent on items carted before this field existed (= 15) */
+  concentration?: number;
   qty: number;
   unitPrice: number;
   formula: ScentFormula;
@@ -45,6 +47,7 @@ export const useCartStore = create<CartState>()(
               i.kind === item.kind &&
               i.name === item.name &&
               i.bottleSize === item.bottleSize &&
+              (i.concentration ?? 15) === (item.concentration ?? 15) &&
               JSON.stringify(i.formula) === JSON.stringify(item.formula),
           );
           if (existing) {

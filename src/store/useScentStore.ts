@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 import { INGREDIENTS, type NoteKey } from '../data/ingredients';
 import { MASTER_BLEND, rebalance, type Locks, type Percentages } from '../lib/blend';
-import type { BottleSize } from '../lib/recipe';
+import {
+  DEFAULT_CONCENTRATION,
+  MAX_CONCENTRATION,
+  MIN_CONCENTRATION,
+  type BottleSize,
+  type Solvent,
+} from '../lib/recipe';
 
 export type Theme = 'dark' | 'light';
 
@@ -14,6 +20,9 @@ interface ScentState {
   activeNote: NoteKey;
   customName: string;
   bottleSize: BottleSize;
+  /** Fragrance oil concentration, percent (15–25) */
+  concentration: number;
+  solvent: Solvent;
   theme: Theme;
   /** True when the user pressed "Blend my scent" — liquids merge into one color */
   blended: boolean;
@@ -26,6 +35,8 @@ interface ScentState {
   setActiveNote: (note: NoteKey) => void;
   setCustomName: (name: string) => void;
   setBottleSize: (size: BottleSize) => void;
+  setConcentration: (pct: number) => void;
+  setSolvent: (solvent: Solvent) => void;
   toggleTheme: () => void;
   resetBlend: () => void;
 }
@@ -43,6 +54,8 @@ export const useScentStore = create<ScentState>((set) => ({
   activeNote: 'heart',
   customName: 'Golden Hour',
   bottleSize: 50,
+  concentration: DEFAULT_CONCENTRATION,
+  solvent: 'alcohol',
   theme: 'dark',
   blended: false,
 
@@ -75,6 +88,13 @@ export const useScentStore = create<ScentState>((set) => ({
   setCustomName: (name) => set({ customName: name.slice(0, MAX_NAME_LENGTH) }),
 
   setBottleSize: (size) => set({ bottleSize: size }),
+
+  setConcentration: (pct) =>
+    set({
+      concentration: Math.max(MIN_CONCENTRATION, Math.min(MAX_CONCENTRATION, Math.round(pct))),
+    }),
+
+  setSolvent: (solvent) => set({ solvent }),
 
   toggleTheme: () =>
     set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
