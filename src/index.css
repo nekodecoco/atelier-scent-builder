@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-ivory text-neutral-800 antialiased;
+  --slider-track: #ddd3bd;
+}
+
+.dark body {
+  @apply bg-night text-cream;
+  --slider-track: #2a2620;
+}
+
+/* Note sliders — color driven by --slider-color set inline per note */
+input[type='range'].note-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--slider-color) 0%,
+    var(--slider-color) var(--slider-fill, 50%),
+    var(--slider-track, #2a2620) var(--slider-fill, 50%),
+    var(--slider-track, #2a2620) 100%
+  );
+  outline: none;
+  cursor: pointer;
+}
+
+input[type='range'].note-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f7f3ea;
+  border: 2.5px solid var(--slider-color);
+  transition: transform 120ms ease;
+}
+
+input[type='range'].note-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+input[type='range'].note-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f7f3ea;
+  border: 2.5px solid var(--slider-color);
+}
+
+input[type='range'].note-slider:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+input[type='range'].note-slider:focus-visible {
+  box-shadow: 0 0 0 3px rgba(212, 184, 114, 0.35);
+}
