@@ -8,6 +8,7 @@ import { CustomNameInput } from './CustomNameInput';
 import { IngredientPicker } from './IngredientPicker';
 import { NoteSlider } from './NoteSlider';
 import { RecipeCalculator } from './RecipeCalculator';
+import { Reveal } from './Reveal';
 import { ScentTwinCard } from './ScentTwinCard';
 
 export function ScentBuilder() {
@@ -103,9 +104,9 @@ export function ScentBuilder() {
         </div>
       </div>
 
-      <div className="mt-8">
+      <Reveal className="mt-8">
         <RecipeCalculator />
-      </div>
+      </Reveal>
     </section>
   );
 }

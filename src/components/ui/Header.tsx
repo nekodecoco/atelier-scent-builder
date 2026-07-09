@@ -6,7 +6,9 @@ import { useScentStore } from '../../store/useScentStore';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `transition-colors hover:text-gold-deep dark:hover:text-gold ${
-    isActive ? 'text-gold-deep dark:text-gold' : ''
+    isActive
+      ? 'text-gold-deep underline decoration-1 underline-offset-8 dark:text-gold'
+      : ''
   }`;
 
 export function Header() {

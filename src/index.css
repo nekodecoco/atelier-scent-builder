@@ -6,6 +6,87 @@ html {
   scroll-behavior: smooth;
 }
 
+::selection {
+  background: rgba(212, 184, 114, 0.35);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cfc6ae;
+  border-radius: 8px;
+  border: 3px solid #f7f3ea;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3a342a;
+  border-color: #0f0e0c;
+}
+
+/* scroll-in reveal (see Reveal.tsx) */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal.revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* light sweep across gold CTAs on hover */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%) skewX(-18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: transform 0.7s ease;
+  pointer-events: none;
+}
+
+.shimmer:hover::after {
+  transform: translateX(120%);
+}
+
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .shimmer::after {
+    display: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 body {
   @apply bg-ivory text-neutral-800 antialiased;
   --slider-track: #ddd3bd;

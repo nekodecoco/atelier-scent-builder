@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { AdminOrders } from '../components/ui/admin/AdminOrders';
 import { IngredientToggles } from '../components/ui/admin/IngredientToggles';
+import { NoteEditor } from '../components/ui/admin/NoteEditor';
+import { PerfumeEditor } from '../components/ui/admin/PerfumeEditor';
 import { StockEditor } from '../components/ui/admin/StockEditor';
 import { SupabaseSetupNotice } from '../components/ui/SupabaseSetupNotice';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -57,6 +59,20 @@ export function AdminPage() {
   } else {
     body = (
       <>
+        <Section
+          title="My perfumes"
+          hint="Create house blends of your own — they appear in the collection beside the built-ins. Built-in blends can be hidden without deleting them."
+        >
+          <PerfumeEditor />
+        </Section>
+
+        <Section
+          title="My notes"
+          hint="Add your own ingredients to the scent builder. Custom notes show a ★ and work everywhere — 3D liquid, recipe, and cart."
+        >
+          <NoteEditor />
+        </Section>
+
         <Section
           title="Premade stock"
           hint="Scents without a saved count are treated as in stock. Setting 0 shows an out-of-stock badge and disables buying (remix stays enabled)."
