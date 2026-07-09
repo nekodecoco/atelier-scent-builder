@@ -1,12 +1,9 @@
 import { Float, MeshTransmissionMaterial, RoundedBox } from '@react-three/drei';
-import { useScentStore } from '../../store/useScentStore';
 import { LiquidLayers } from './LiquidLayers';
 import { BottleLabel } from './BottleLabel';
 import { BODY } from './bottleDimensions';
 
 export function Bottle() {
-  const theme = useScentStore((s) => s.theme);
-
   return (
     <Float speed={1.1} rotationIntensity={0.12} floatIntensity={0.35} floatingRange={[-0.06, 0.06]}>
       <group position={[0, -0.35, 0]}>
@@ -30,10 +27,6 @@ export function Bottle() {
             attenuationColor="#f3ecdc"
             attenuationDistance={2.5}
             backside={false}
-            // the canvas is alpha-transparent, so the transmission buffer has no
-            // backdrop to refract; slight opacity lets the page color show through
-            transparent
-            opacity={theme === 'dark' ? 0.92 : 0.96}
           />
         </RoundedBox>
 

@@ -1,4 +1,4 @@
-import { RotateCcw, ShoppingBag } from 'lucide-react';
+import { Droplets, RotateCcw, ShoppingBag } from 'lucide-react';
 import { NOTE_KEYS, NOTE_TAGLINES } from '../../data/ingredients';
 import { formatPeso, PRICE_BY_SIZE } from '../../lib/pricing';
 import { useCartStore } from '../../store/useCartStore';
@@ -13,6 +13,8 @@ import { ScentTwinCard } from './ScentTwinCard';
 export function ScentBuilder() {
   const resetBlend = useScentStore((s) => s.resetBlend);
   const bottleSize = useScentStore((s) => s.bottleSize);
+  const blended = useScentStore((s) => s.blended);
+  const toggleBlended = useScentStore((s) => s.toggleBlended);
   const addItem = useCartStore((s) => s.addItem);
 
   const addBlendToCart = () => {
@@ -38,7 +40,7 @@ export function ScentBuilder() {
       </p>
 
       <div className="mt-12 grid gap-8 lg:grid-cols-[5fr_6fr]">
-        <div className="relative h-[420px] overflow-hidden rounded-lg border border-ivory-line bg-gradient-to-b from-transparent to-black/5 dark:border-night-line dark:to-black/30 sm:h-[520px] lg:h-auto lg:min-h-[560px]">
+        <div className="relative h-[420px] overflow-hidden rounded-lg border border-ivory-line dark:border-night-line sm:h-[520px] lg:h-auto lg:min-h-[560px]">
           <Scene />
           <span className="pointer-events-none absolute left-4 top-4 font-sans text-[10px] tracking-luxe text-stone-dim">
             DRAG TO ROTATE
@@ -75,6 +77,20 @@ export function ScentBuilder() {
             </button>
             <ScentTwinCard />
           </div>
+
+          <button
+            type="button"
+            onClick={toggleBlended}
+            aria-pressed={blended}
+            className={`flex items-center justify-center gap-2 rounded border px-4 py-3.5 font-sans text-[11px] tracking-luxe transition-colors ${
+              blended
+                ? 'border-gold-deep bg-gold-deep/10 text-gold-deep dark:border-gold dark:bg-gold/10 dark:text-gold'
+                : 'border-ivory-line text-stone hover:border-gold-deep hover:text-gold-deep dark:border-night-line dark:hover:border-gold dark:hover:text-gold'
+            }`}
+          >
+            <Droplets size={14} aria-hidden />
+            {blended ? 'BLENDED — ADJUST ANYTHING TO SEPARATE' : 'BLEND MY SCENT'}
+          </button>
 
           <button
             type="button"

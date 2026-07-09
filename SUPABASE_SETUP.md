@@ -59,6 +59,61 @@ then redeploy:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
+## Admin panel (stock, ingredients, orders)
+
+The `/admin` page needs three more tables and an extra column. Run this in **SQL Editor**:
+
+```sql
+-- who is allowed to administer the shop
+create table public.admins (
+  user_id uuid primary key references auth.users
+);
+alter table public.admins enable row level security;
+create policy "read own admin flag" on public.admins
+  for select using (auth.uid() = user_id);
+
+-- stock for premade scents (no row = treated as in stock)
+create table public.premade_stock (
+  scent_id text primary key,
+  stock integer not null default 0
+);
+alter table public.premade_stock enable row level security;
+create policy "public read stock" on public.premade_stock
+  for select using (true);
+create policy "admin write stock" on public.premade_stock
+  for all
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+-- which builder ingredients are available (no row = available)
+create table public.ingredient_availability (
+  ingredient_id text primary key,
+  available boolean not null default true
+);
+alter table public.ingredient_availability enable row level security;
+create policy "public read availability" on public.ingredient_availability
+  for select using (true);
+create policy "admin write availability" on public.ingredient_availability
+  for all
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+-- orders: capture customer email + let admins see and update everything
+alter table public.orders add column email text;
+create policy "admins read all orders" on public.orders
+  for select using (exists (select 1 from public.admins where user_id = auth.uid()));
+create policy "admins update orders" on public.orders
+  for update
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+-- make yourself the admin (must have signed up in the app first)
+insert into public.admins (user_id)
+  select id from auth.users where email = 'nikko.alferez@gmail.com';
+```
+
+After running it, sign in with that account and an **ADMIN** link appears in the header.
+
 ## Updating an order's status
 
 Orders start as `pending`. To update one after you've mixed/shipped it, run in SQL Editor:

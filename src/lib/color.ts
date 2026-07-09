@@ -1,3 +1,5 @@
+import { getIngredient, NOTE_KEYS, type NoteKey } from '../data/ingredients';
+import type { Percentages } from './blend';
 import type { Theme } from '../store/useScentStore';
 
 function hexToHsl(hex: string): [number, number, number] {
@@ -39,4 +41,30 @@ export function inkFor(hex: string, theme: Theme): string {
   const [h, s, l] = hexToHsl(hex);
   if (theme === 'light') return l > 0.42 ? hslToHex(h, Math.min(s + 0.08, 1), 0.38) : hex;
   return l < 0.5 ? hslToHex(h, s, 0.58) : hex;
+}
+
+/**
+ * The single color the finished perfume settles into: the percentage-weighted
+ * mix of the three ingredient colors, blended in gamma-corrected space so
+ * mid-tones don't go muddy.
+ */
+export function mixFormulaColor(
+  selected: Record<NoteKey, string>,
+  percentages: Percentages,
+): string {
+  const channels = [0, 0, 0];
+  for (const note of NOTE_KEYS) {
+    const hex = getIngredient(note, selected[note]).color;
+    const weight = percentages[note] / 100;
+    const n = parseInt(hex.slice(1), 16);
+    const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    for (let i = 0; i < 3; i++) channels[i] += weight * Math.pow(rgb[i] / 255, 2.2);
+  }
+  return `#${channels
+    .map((c) =>
+      Math.round(Math.pow(Math.min(c, 1), 1 / 2.2) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
 }

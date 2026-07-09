@@ -3,14 +3,17 @@ import { Route, Routes } from 'react-router-dom';
 import { CartDrawer } from './components/ui/CartDrawer';
 import { Header } from './components/ui/Header';
 import { AccountPage } from './pages/AccountPage';
+import { AdminPage } from './pages/AdminPage';
 import { CollectionPage } from './pages/CollectionPage';
 import { HomePage } from './pages/HomePage';
 import { useAuthStore } from './store/useAuthStore';
+import { useCatalogStore } from './store/useCatalogStore';
 import { useScentStore } from './store/useScentStore';
 
 export default function App() {
   const theme = useScentStore((s) => s.theme);
   const initAuth = useAuthStore((s) => s.init);
+  const loadCatalog = useCatalogStore((s) => s.load);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -18,7 +21,8 @@ export default function App() {
 
   useEffect(() => {
     initAuth();
-  }, [initAuth]);
+    loadCatalog();
+  }, [initAuth, loadCatalog]);
 
   return (
     <>
@@ -29,6 +33,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/collection" element={<CollectionPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>
       <footer className="border-t border-ivory-line px-5 py-10 dark:border-night-line">

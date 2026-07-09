@@ -13,6 +13,7 @@ export function Scene() {
       gl={{ antialias: true, alpha: true }}
       style={{ touchAction: 'pan-y' }}
     >
+      <color attach="background" args={[theme === 'dark' ? '#131210' : '#efe8d9']} />
       <ambientLight intensity={0.4} />
       <Environment resolution={256}>
         <Lightformer intensity={2.2} position={[0, 4, 3]} scale={[7, 3, 1]} color="#ffffff" />

@@ -15,8 +15,11 @@ interface ScentState {
   customName: string;
   bottleSize: BottleSize;
   theme: Theme;
+  /** True when the user pressed "Blend my scent" — liquids merge into one color */
+  blended: boolean;
 
   setPercentage: (note: NoteKey, value: number) => void;
+  toggleBlended: () => void;
   loadFormula: (formula: { selected: Record<NoteKey, string>; percentages: Percentages }, name?: string) => void;
   toggleLock: (note: NoteKey) => void;
   selectIngredient: (note: NoteKey, id: string) => void;
@@ -41,12 +44,16 @@ export const useScentStore = create<ScentState>((set) => ({
   customName: 'Golden Hour',
   bottleSize: 50,
   theme: 'dark',
+  blended: false,
 
   setPercentage: (note, value) =>
     set((s) => ({
       percentages: rebalance(s.percentages, s.locks, note, value),
       activeNote: note,
+      blended: false,
     })),
+
+  toggleBlended: () => set((s) => ({ blended: !s.blended })),
 
   loadFormula: (formula, name) =>
     set((s) => ({
@@ -54,13 +61,14 @@ export const useScentStore = create<ScentState>((set) => ({
       percentages: { ...formula.percentages },
       locks: { top: false, heart: false, base: false },
       customName: (name ?? s.customName).slice(0, MAX_NAME_LENGTH),
+      blended: false,
     })),
 
   toggleLock: (note) =>
     set((s) => ({ locks: { ...s.locks, [note]: !s.locks[note] } })),
 
   selectIngredient: (note, id) =>
-    set((s) => ({ selected: { ...s.selected, [note]: id }, activeNote: note })),
+    set((s) => ({ selected: { ...s.selected, [note]: id }, activeNote: note, blended: false })),
 
   setActiveNote: (note) => set({ activeNote: note }),
 
@@ -75,5 +83,6 @@ export const useScentStore = create<ScentState>((set) => ({
     set({
       percentages: { ...MASTER_BLEND },
       locks: { top: false, heart: false, base: false },
+      blended: false,
     }),
 }));

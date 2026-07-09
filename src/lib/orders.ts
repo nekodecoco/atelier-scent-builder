@@ -19,14 +19,30 @@ export async function placeOrder(
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) return { error: 'You need to sign in to place an order.' };
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('orders')
-    .insert({ user_id: userData.user.id, total, currency: 'PHP', items })
+    .insert({
+      user_id: userData.user.id,
+      email: userData.user.email ?? null,
+      total,
+      currency: 'PHP',
+      items,
+    })
     .select('id')
     .single();
 
+  // the email column arrives with the admin migration — keep checkout working
+  // on databases that haven't run it yet
+  if (error && /email/.test(error.message)) {
+    ({ data, error } = await supabase
+      .from('orders')
+      .insert({ user_id: userData.user.id, total, currency: 'PHP', items })
+      .select('id')
+      .single());
+  }
+
   if (error) return { error: error.message };
-  return { orderId: data.id as string };
+  return { orderId: data!.id as string };
 }
 
 export async function fetchMyOrders(): Promise<{ orders?: OrderRecord[]; error?: string }> {

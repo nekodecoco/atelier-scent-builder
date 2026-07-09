@@ -1,5 +1,6 @@
 import { Moon, ShoppingBag, Sun, User } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
 import { cartCount, useCartStore } from '../../store/useCartStore';
 import { useScentStore } from '../../store/useScentStore';
 
@@ -13,6 +14,7 @@ export function Header() {
   const toggleTheme = useScentStore((s) => s.toggleTheme);
   const count = useCartStore((s) => cartCount(s.items));
   const openCart = useCartStore((s) => s.openCart);
+  const isAdmin = useAuthStore((s) => s.isAdmin);
 
   return (
     <header className="fixed inset-x-0 top-0 z-30 border-b border-ivory-line/70 bg-ivory/80 backdrop-blur-md dark:border-night-line dark:bg-night/80">
@@ -31,6 +33,11 @@ export function Header() {
           >
             SCENT BUILDER
           </Link>
+          {isAdmin && (
+            <NavLink to="/admin" className={navClass}>
+              ADMIN
+            </NavLink>
+          )}
           <NavLink to="/account" className={navClass} aria-label="Account">
             <User size={15} aria-hidden />
           </NavLink>

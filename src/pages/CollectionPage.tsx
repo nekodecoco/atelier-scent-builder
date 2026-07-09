@@ -8,6 +8,7 @@ import { inkFor } from '../lib/color';
 import { formatPeso, PRICE_BY_SIZE } from '../lib/pricing';
 import { BOTTLE_SIZES, type BottleSize } from '../lib/recipe';
 import { useCartStore } from '../store/useCartStore';
+import { useCatalogStore } from '../store/useCatalogStore';
 import { useScentStore } from '../store/useScentStore';
 
 function PremadeCard({ scent }: { scent: PremadeScent }) {
@@ -15,6 +16,7 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
   const addItem = useCartStore((s) => s.addItem);
   const loadFormula = useScentStore((s) => s.loadFormula);
   const theme = useScentStore((s) => s.theme);
+  const inStock = useCatalogStore((s) => s.isInStock(scent.id));
   const navigate = useNavigate();
 
   const remix = () => {
@@ -28,9 +30,16 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
         <BottlePreview formula={scent.formula} name={scent.name} />
       </div>
 
-      <p className="mt-5 font-sans text-[10px] uppercase tracking-luxe text-gold-deep dark:text-gold">
-        {scent.tagline}
-      </p>
+      <div className="mt-5 flex items-center justify-between gap-2">
+        <p className="font-sans text-[10px] uppercase tracking-luxe text-gold-deep dark:text-gold">
+          {scent.tagline}
+        </p>
+        {!inStock && (
+          <span className="rounded-full border border-stone-dim/50 px-2.5 py-0.5 font-sans text-[9px] uppercase tracking-luxe text-stone-dim">
+            Out of stock
+          </span>
+        )}
+      </div>
       <h2 className="mt-1 font-display text-2xl text-neutral-900 dark:text-cream">{scent.name}</h2>
       <p className="mt-2 flex-1 font-sans text-xs leading-relaxed text-stone">{scent.description}</p>
 
@@ -67,6 +76,7 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
       <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
         <button
           type="button"
+          disabled={!inStock}
           onClick={() =>
             addItem({
               kind: 'premade',
@@ -76,10 +86,10 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
               formula: scent.formula,
             })
           }
-          className="flex items-center justify-center gap-2 rounded bg-gold-deep px-4 py-3 font-sans text-[10px] tracking-luxe text-ivory transition-opacity hover:opacity-90 dark:bg-gold dark:text-night"
+          className="flex items-center justify-center gap-2 rounded bg-gold-deep px-4 py-3 font-sans text-[10px] tracking-luxe text-ivory transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-gold dark:text-night"
         >
           <ShoppingBag size={13} aria-hidden />
-          ADD TO CART
+          {inStock ? 'ADD TO CART' : 'OUT OF STOCK'}
         </button>
         <button
           type="button"

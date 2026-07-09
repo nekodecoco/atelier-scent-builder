@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { checkIsAdmin } from '../lib/catalog';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 export interface AuthUser {
@@ -13,6 +14,7 @@ export interface AuthResult {
 
 interface AuthState {
   user: AuthUser | null;
+  isAdmin: boolean;
   loading: boolean;
   init: () => void;
   signUp: (email: string, password: string) => Promise<AuthResult>;
@@ -24,21 +26,24 @@ let initialized = false;
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  isAdmin: false,
   loading: isSupabaseConfigured,
 
   init: () => {
     if (initialized || !supabase) return;
     initialized = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      const u = data.session?.user;
-      set({ user: u ? { id: u.id, email: u.email ?? '' } : null, loading: false });
-    });
+    const applySession = (u: { id: string; email?: string } | null | undefined) => {
+      if (!u) {
+        set({ user: null, isAdmin: false, loading: false });
+        return;
+      }
+      set({ user: { id: u.id, email: u.email ?? '' }, loading: false });
+      checkIsAdmin(u.id).then((isAdmin) => set({ isAdmin }));
+    };
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user;
-      set({ user: u ? { id: u.id, email: u.email ?? '' } : null, loading: false });
-    });
+    supabase.auth.getSession().then(({ data }) => applySession(data.session?.user));
+    supabase.auth.onAuthStateChange((_event, session) => applySession(session?.user));
   },
 
   signUp: async (email, password) => {
@@ -60,6 +65,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signOut: async () => {
     await supabase?.auth.signOut();
-    set({ user: null });
+    set({ user: null, isAdmin: false });
   },
 }));
