@@ -6,6 +6,7 @@ import { CostingCalculator } from '../components/ui/admin/CostingCalculator';
 import { IngredientToggles } from '../components/ui/admin/IngredientToggles';
 import { NoteEditor } from '../components/ui/admin/NoteEditor';
 import { PerfumeEditor } from '../components/ui/admin/PerfumeEditor';
+import { PricingEditor } from '../components/ui/admin/PricingEditor';
 import { StockEditor } from '../components/ui/admin/StockEditor';
 import { SupabaseSetupNotice } from '../components/ui/SupabaseSetupNotice';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -61,8 +62,15 @@ export function AdminPage() {
     body = (
       <>
         <Section
+          title="Custom blend prices"
+          hint="What the scent builder charges per bottle size at 15% oil, plus the surcharge for stronger blends. Premades have their own prices below."
+        >
+          <PricingEditor />
+        </Section>
+
+        <Section
           title="My perfumes"
-          hint="Create house blends of your own — they appear in the collection beside the built-ins. Built-in blends can be hidden without deleting them."
+          hint="Create house blends of your own — they appear in the collection beside the built-ins. Set each perfume's price per bottle size; blank fields fall back to the builder price. Built-in blends can be hidden without deleting them."
         >
           <PerfumeEditor />
         </Section>

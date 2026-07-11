@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { useCatalogStore } from '../../../store/useCatalogStore';
 import { computeCost, OIL_RATES, type OilGrade } from '../../../lib/costing';
 import { formatPeso } from '../../../lib/pricing';
 import {
@@ -20,6 +21,8 @@ function peso2(value: number): string {
 }
 
 export function CostingCalculator() {
+  // re-render when admin-set pricing loads/changes
+  useCatalogStore((s) => s.pricing);
   const [size, setSize] = useState<BottleSize>(50);
   const [concentration, setConcentration] = useState(15);
   const [solvent, setSolvent] = useState<Solvent>('alcohol');

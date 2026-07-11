@@ -6,7 +6,7 @@ import { Reveal } from '../components/ui/Reveal';
 import { getIngredient, NOTE_KEYS } from '../data/ingredients';
 import { PREMADE_SCENTS, type PremadeScent } from '../data/premadeScents';
 import { inkFor } from '../lib/color';
-import { formatPeso, PRICE_BY_SIZE } from '../lib/pricing';
+import { formatPeso, premadePriceFor } from '../lib/pricing';
 import { BOTTLE_SIZES, DEFAULT_CONCENTRATION, type BottleSize } from '../lib/recipe';
 import { useCartStore } from '../store/useCartStore';
 import { useCatalogStore } from '../store/useCatalogStore';
@@ -18,7 +18,11 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
   const loadFormula = useScentStore((s) => s.loadFormula);
   const theme = useScentStore((s) => s.theme);
   const inStock = useCatalogStore((s) => s.isInStock(scent.id));
+  // subscribing keeps displayed prices in sync with admin-set values
+  useCatalogStore((s) => s.premadePrices);
+  useCatalogStore((s) => s.pricing);
   const navigate = useNavigate();
+  const price = premadePriceFor(scent.id, size);
 
   const remix = () => {
     loadFormula(scent.formula, scent.name);
@@ -70,7 +74,7 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
           ))}
         </select>
         <span className="font-display text-xl text-neutral-900 dark:text-cream">
-          {formatPeso(PRICE_BY_SIZE[size])}
+          {formatPeso(price)}
         </span>
       </div>
 
@@ -85,7 +89,7 @@ function PremadeCard({ scent }: { scent: PremadeScent }) {
               bottleSize: size,
               concentration: DEFAULT_CONCENTRATION,
               solvent: 'alcohol',
-              unitPrice: PRICE_BY_SIZE[size],
+              unitPrice: price,
               formula: scent.formula,
             })
           }

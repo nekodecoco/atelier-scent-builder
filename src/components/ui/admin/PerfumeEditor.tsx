@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Eye, EyeOff, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, Eye, EyeOff, Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { INGREDIENTS, NOTE_KEYS, NOTE_LABELS, type NoteKey } from '../../../data/ingredients';
 import { PREMADE_SCENTS } from '../../../data/premadeScents';
 import type { Percentages } from '../../../lib/blend';
@@ -7,7 +7,10 @@ import {
   deleteCustomPremade,
   setPremadeHidden,
   upsertCustomPremade,
+  upsertPremadePrice,
 } from '../../../lib/catalog';
+import { priceFor } from '../../../lib/pricing';
+import type { BottleSize } from '../../../lib/recipe';
 import { useCatalogStore } from '../../../store/useCatalogStore';
 import { BottlePreview } from '../BottlePreview';
 
@@ -35,6 +38,76 @@ const EMPTY: FormState = {
 const inputClass =
   'w-full rounded border border-ivory-line bg-white/70 px-3 py-2.5 font-sans text-sm text-neutral-900 outline-none placeholder:text-stone/50 focus:border-gold-deep dark:border-night-line dark:bg-night-card dark:text-cream dark:focus:border-gold';
 const labelClass = 'font-sans text-[10px] uppercase tracking-luxe text-stone-dim';
+
+/** Per-perfume price inputs — blank falls back to the builder size price */
+function PremadePriceFields({ scentId }: { scentId: string }) {
+  const saved = useCatalogStore((s) => s.premadePrices[scentId]);
+  useCatalogStore((s) => s.pricing);
+  const reload = useCatalogStore((s) => s.load);
+
+  const toForm = (prices?: Partial<Record<BottleSize, number>>) => ({
+    30: prices?.[30] !== undefined ? String(prices[30]) : '',
+    50: prices?.[50] !== undefined ? String(prices[50]) : '',
+    100: prices?.[100] !== undefined ? String(prices[100]) : '',
+  });
+  const [values, setValues] = useState(toForm(saved));
+  const [state, setState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => setValues(toForm(saved)), [saved]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const save = async () => {
+    setState('saving');
+    const prices: Partial<Record<BottleSize, number>> = {};
+    for (const size of [30, 50, 100] as BottleSize[]) {
+      const price = Number(values[size]);
+      if (values[size] !== '' && Number.isFinite(price) && price > 0) prices[size] = Math.round(price);
+    }
+    const err = await upsertPremadePrice(scentId, prices);
+    if (err) {
+      setState('idle');
+      setError(err);
+      return;
+    }
+    setError(null);
+    await reload();
+    setState('saved');
+    setTimeout(() => setState('idle'), 1500);
+  };
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      {([30, 50, 100] as BottleSize[]).map((size) => (
+        <label
+          key={size}
+          className="flex items-center gap-1.5 font-sans text-[9px] uppercase tracking-luxe text-stone-dim"
+        >
+          {size}mL ₱
+          <input
+            type="number"
+            min={1}
+            value={values[size]}
+            placeholder={String(priceFor(size))}
+            onChange={(e) => setValues((v) => ({ ...v, [size]: e.target.value }))}
+            aria-label={`Price for ${size} mL`}
+            className="w-20 rounded border border-ivory-line bg-white/70 px-2 py-1.5 font-sans text-xs tracking-normal text-neutral-900 outline-none placeholder:text-stone/40 focus:border-gold-deep dark:border-night-line dark:bg-night-card dark:text-cream dark:focus:border-gold"
+          />
+        </label>
+      ))}
+      <button
+        type="button"
+        onClick={save}
+        disabled={state === 'saving'}
+        className="flex items-center gap-1 rounded border border-gold-deep px-3 py-1.5 font-sans text-[9px] tracking-luxe text-gold-deep transition-colors hover:bg-gold-deep hover:text-ivory disabled:opacity-50 dark:border-gold dark:text-gold dark:hover:bg-gold dark:hover:text-night"
+      >
+        {state === 'saving' && <Loader2 size={10} className="animate-spin" aria-hidden />}
+        {state === 'saved' && <Check size={10} aria-hidden />}
+        {state === 'saved' ? 'SAVED' : 'SAVE PRICE'}
+      </button>
+      {error && <span className="font-sans text-[10px] text-red-400">{error}</span>}
+    </div>
+  );
+}
 
 export function PerfumeEditor() {
   const customIngredients = useCatalogStore((s) => s.customIngredients);
@@ -245,35 +318,38 @@ export function PerfumeEditor() {
           {customPremades.map((scent) => (
             <li
               key={scent.id}
-              className="flex items-center justify-between gap-3 border-b border-ivory-line/50 py-2.5 dark:border-night-line/70"
+              className="border-b border-ivory-line/50 py-2.5 dark:border-night-line/70"
             >
-              <span className="font-display text-base italic text-neutral-900 dark:text-cream">
-                {scent.name}{' '}
-                <span className="font-sans text-[9px] uppercase not-italic tracking-luxe text-gold-deep dark:text-gold">
-                  · Custom
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-display text-base italic text-neutral-900 dark:text-cream">
+                  {scent.name}{' '}
+                  <span className="font-sans text-[9px] uppercase not-italic tracking-luxe text-gold-deep dark:text-gold">
+                    · Custom
+                  </span>
                 </span>
-              </span>
-              <span className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => startEdit(scent.id)}
-                  aria-label={`Edit ${scent.name}`}
-                  className="p-1 text-stone-dim transition-colors hover:text-gold-deep dark:hover:text-gold"
-                >
-                  <Pencil size={13} aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => remove(scent.id)}
-                  aria-label={`Delete ${scent.name}`}
-                  className={`flex items-center gap-1 p-1 font-sans text-[9px] tracking-luxe transition-colors ${
-                    confirmingDelete === scent.id ? 'text-red-400' : 'text-stone-dim hover:text-red-400'
-                  }`}
-                >
-                  <Trash2 size={13} aria-hidden />
-                  {confirmingDelete === scent.id && 'SURE?'}
-                </button>
-              </span>
+                <span className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(scent.id)}
+                    aria-label={`Edit ${scent.name}`}
+                    className="p-1 text-stone-dim transition-colors hover:text-gold-deep dark:hover:text-gold"
+                  >
+                    <Pencil size={13} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove(scent.id)}
+                    aria-label={`Delete ${scent.name}`}
+                    className={`flex items-center gap-1 p-1 font-sans text-[9px] tracking-luxe transition-colors ${
+                      confirmingDelete === scent.id ? 'text-red-400' : 'text-stone-dim hover:text-red-400'
+                    }`}
+                  >
+                    <Trash2 size={13} aria-hidden />
+                    {confirmingDelete === scent.id && 'SURE?'}
+                  </button>
+                </span>
+              </div>
+              <PremadePriceFields scentId={scent.id} />
             </li>
           ))}
           {PREMADE_SCENTS.map((scent) => {
@@ -281,26 +357,29 @@ export function PerfumeEditor() {
             return (
               <li
                 key={scent.id}
-                className="flex items-center justify-between gap-3 border-b border-ivory-line/50 py-2.5 last:border-b-0 dark:border-night-line/70"
+                className="border-b border-ivory-line/50 py-2.5 last:border-b-0 dark:border-night-line/70"
               >
-                <span
-                  className={`font-display text-base italic ${
-                    hidden ? 'text-stone-dim' : 'text-neutral-900 dark:text-cream'
-                  }`}
-                >
-                  {scent.name}{' '}
-                  <span className="font-sans text-[9px] uppercase not-italic tracking-luxe text-stone-dim">
-                    · House{hidden ? ' · Hidden' : ''}
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className={`font-display text-base italic ${
+                      hidden ? 'text-stone-dim' : 'text-neutral-900 dark:text-cream'
+                    }`}
+                  >
+                    {scent.name}{' '}
+                    <span className="font-sans text-[9px] uppercase not-italic tracking-luxe text-stone-dim">
+                      · House{hidden ? ' · Hidden' : ''}
+                    </span>
                   </span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => toggleHidden(scent.id)}
-                  className="flex items-center gap-1.5 p-1 font-sans text-[9px] tracking-luxe text-stone-dim transition-colors hover:text-gold-deep dark:hover:text-gold"
-                >
-                  {hidden ? <Eye size={13} aria-hidden /> : <EyeOff size={13} aria-hidden />}
-                  {hidden ? 'SHOW' : 'HIDE'}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleHidden(scent.id)}
+                    className="flex items-center gap-1.5 p-1 font-sans text-[9px] tracking-luxe text-stone-dim transition-colors hover:text-gold-deep dark:hover:text-gold"
+                  >
+                    {hidden ? <Eye size={13} aria-hidden /> : <EyeOff size={13} aria-hidden />}
+                    {hidden ? 'SHOW' : 'HIDE'}
+                  </button>
+                </div>
+                {!hidden && <PremadePriceFields scentId={scent.id} />}
               </li>
             );
           })}

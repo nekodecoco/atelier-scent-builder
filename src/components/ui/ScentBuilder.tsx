@@ -1,7 +1,14 @@
-import { Droplets, RotateCcw, ShoppingBag } from 'lucide-react';
-import { NOTE_KEYS, NOTE_TAGLINES } from '../../data/ingredients';
+import { Dices, Droplets, RotateCcw, ShoppingBag } from 'lucide-react';
+import {
+  getCustomIngredients,
+  INGREDIENTS,
+  NOTE_KEYS,
+  NOTE_TAGLINES,
+  type NoteKey,
+} from '../../data/ingredients';
 import { formatPeso, priceFor } from '../../lib/pricing';
 import { useCartStore } from '../../store/useCartStore';
+import { useCatalogStore } from '../../store/useCatalogStore';
 import { useScentStore } from '../../store/useScentStore';
 import { Scene } from '../three/Scene';
 import { CustomNameInput } from './CustomNameInput';
@@ -9,7 +16,16 @@ import { IngredientPicker } from './IngredientPicker';
 import { NoteSlider } from './NoteSlider';
 import { RecipeCalculator } from './RecipeCalculator';
 import { Reveal } from './Reveal';
+import { ScentConcierge } from './ScentConcierge';
+import { ScentProfileCard } from './ScentProfileCard';
 import { ScentTwinCard } from './ScentTwinCard';
+
+const SURPRISE_NAMES = [
+  'Velvet Dawn', 'Midnight Garden', 'Manila Sunrise', 'Golden Monsoon',
+  'Silk Ember', 'Moonlit Harbor', 'Paper Crane', 'Wild Orchid',
+  'Sunday Linen', 'Dusk Ritual', 'First Rain', 'Isla Verde',
+  'Amber Hour', 'Quiet Storm', 'Sampaguita Nights', 'Harana',
+];
 
 export function ScentBuilder() {
   const resetBlend = useScentStore((s) => s.resetBlend);
@@ -18,6 +34,29 @@ export function ScentBuilder() {
   const blended = useScentStore((s) => s.blended);
   const toggleBlended = useScentStore((s) => s.toggleBlended);
   const addItem = useCartStore((s) => s.addItem);
+  // re-render when admin-set pricing loads/changes
+  useCatalogStore((s) => s.pricing);
+
+  const surpriseMe = () => {
+    const { availability } = useCatalogStore.getState();
+    const { loadFormula } = useScentStore.getState();
+    const pick = (note: NoteKey) => {
+      const options = [...INGREDIENTS[note], ...getCustomIngredients(note)].filter(
+        (i) => availability[i.id] !== false,
+      );
+      return options[Math.floor(Math.random() * options.length)].id;
+    };
+    const top = 15 + Math.floor(Math.random() * 26); // 15–40
+    const heart = 30 + Math.floor(Math.random() * 26); // 30–55
+    const base = 100 - top - heart; // 5–55, always positive
+    loadFormula(
+      {
+        selected: { top: pick('top'), heart: pick('heart'), base: pick('base') },
+        percentages: { top, heart, base },
+      },
+      SURPRISE_NAMES[Math.floor(Math.random() * SURPRISE_NAMES.length)],
+    );
+  };
 
   const addBlendToCart = () => {
     const { customName, selected, percentages, solvent } = useScentStore.getState();
@@ -55,6 +94,7 @@ export function ScentBuilder() {
         </div>
 
         <div className="flex flex-col gap-5">
+          <ScentConcierge />
           <CustomNameInput />
 
           {NOTE_KEYS.map((note) => (
@@ -79,7 +119,19 @@ export function ScentBuilder() {
               <RotateCcw size={13} aria-hidden />
               RESET TO MASTER BLEND
             </button>
+            <button
+              type="button"
+              onClick={surpriseMe}
+              className="flex items-center justify-center gap-2 rounded border border-ivory-line px-4 py-3 font-sans text-[10px] tracking-luxe text-stone transition-colors hover:border-gold-deep hover:text-gold-deep dark:border-night-line dark:hover:border-gold dark:hover:text-gold"
+            >
+              <Dices size={13} aria-hidden />
+              SURPRISE ME
+            </button>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
             <ScentTwinCard />
+            <ScentProfileCard />
           </div>
 
           <button

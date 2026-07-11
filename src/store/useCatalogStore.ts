@@ -3,11 +3,19 @@ import {
   fetchAvailability,
   fetchCustomIngredients,
   fetchCustomPremades,
+  fetchPremadePrices,
+  fetchPricing,
   fetchStock,
   type AvailabilityMap,
   type HiddenMap,
   type StockMap,
 } from '../lib/catalog';
+import {
+  registerPremadePrices,
+  registerPricing,
+  type PremadePriceMap,
+  type PricingConfig,
+} from '../lib/pricing';
 import {
   getCustomIngredients,
   INGREDIENTS,
@@ -28,6 +36,8 @@ interface CatalogState {
   hiddenPremades: HiddenMap;
   customIngredients: Record<NoteKey, Ingredient[]>;
   customPremades: PremadeScent[];
+  pricing: PricingConfig;
+  premadePrices: PremadePriceMap;
   loaded: boolean;
   load: () => Promise<void>;
   isInStock: (scentId: string) => boolean;
@@ -40,20 +50,35 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   hiddenPremades: {},
   customIngredients: { top: [], heart: [], base: [] },
   customPremades: [],
+  pricing: { bySize: { 30: 1450, 50: 2150, 100: 3600 }, oilSurchargePerMl: 25 },
+  premadePrices: {},
   loaded: false,
 
   load: async () => {
-    const [{ stock, hidden }, availability, customIngredients, customPremades] =
+    const [{ stock, hidden }, availability, customIngredients, customPremades, pricing, premadePrices] =
       await Promise.all([
         fetchStock(),
         fetchAvailability(),
         fetchCustomIngredients(),
         fetchCustomPremades(),
+        fetchPricing(),
+        fetchPremadePrices(),
       ]);
 
-    // register before set() so 3D/recipe lookups resolve when components re-render
+    // register before set() so 3D/recipe/pricing lookups resolve when components re-render
     registerCustomIngredients(customIngredients);
-    set({ stock, availability, hiddenPremades: hidden, customIngredients, customPremades, loaded: true });
+    registerPricing(pricing);
+    registerPremadePrices(premadePrices);
+    set({
+      stock,
+      availability,
+      hiddenPremades: hidden,
+      customIngredients,
+      customPremades,
+      pricing,
+      premadePrices,
+      loaded: true,
+    });
 
     // if a selected ingredient is now unavailable or deleted, move the
     // selection to the first selectable option in that layer

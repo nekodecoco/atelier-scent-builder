@@ -1,6 +1,8 @@
 import { NOTE_KEYS, type Ingredient, type NoteKey } from '../data/ingredients';
 import type { PremadeScent, ScentFormula } from '../data/premadeScents';
 import type { OrderRecord } from './orders';
+import { DEFAULT_PRICING, type PremadePriceMap, type PricingConfig } from './pricing';
+import type { BottleSize } from './recipe';
 import { supabase } from './supabase';
 
 export type StockMap = Record<string, number>;
@@ -184,6 +186,81 @@ export async function upsertCustomPremade(input: {
 export async function deleteCustomPremade(id: string): Promise<string | null> {
   if (!supabase) return 'Supabase is not configured.';
   const { error } = await supabase.from('custom_premades').delete().eq('id', id);
+  return error ? error.message : null;
+}
+
+/** Missing row or table (pre-migration) → current built-in defaults. */
+export async function fetchPricing(): Promise<PricingConfig> {
+  if (!supabase) return DEFAULT_PRICING;
+  const { data, error } = await supabase
+    .from('shop_settings')
+    .select('value')
+    .eq('key', 'pricing')
+    .maybeSingle();
+  if (error || !data?.value) return DEFAULT_PRICING;
+  const value = data.value as { bySize?: Record<string, number>; oilSurchargePerMl?: number };
+  const bySize = { ...DEFAULT_PRICING.bySize };
+  for (const size of [30, 50, 100] as BottleSize[]) {
+    const price = Number(value.bySize?.[String(size)]);
+    if (Number.isFinite(price) && price > 0) bySize[size] = price;
+  }
+  const surcharge = Number(value.oilSurchargePerMl);
+  return {
+    bySize,
+    oilSurchargePerMl: Number.isFinite(surcharge) && surcharge >= 0
+      ? surcharge
+      : DEFAULT_PRICING.oilSurchargePerMl,
+  };
+}
+
+export async function upsertPricing(config: PricingConfig): Promise<string | null> {
+  if (!supabase) return 'Supabase is not configured.';
+  const { error } = await supabase.from('shop_settings').upsert({
+    key: 'pricing',
+    value: {
+      bySize: { '30': config.bySize[30], '50': config.bySize[50], '100': config.bySize[100] },
+      oilSurchargePerMl: config.oilSurchargePerMl,
+    },
+  });
+  return error ? error.message : null;
+}
+
+export async function fetchPremadePrices(): Promise<PremadePriceMap> {
+  if (!supabase) return {};
+  const { data, error } = await supabase.from('premade_prices').select('scent_id, prices');
+  if (error || !data) return {};
+  const map: PremadePriceMap = {};
+  for (const row of data as { scent_id: string; prices: Record<string, number> }[]) {
+    const entry: Partial<Record<BottleSize, number>> = {};
+    for (const size of [30, 50, 100] as BottleSize[]) {
+      const price = Number(row.prices?.[String(size)]);
+      if (Number.isFinite(price) && price > 0) entry[size] = price;
+    }
+    if (Object.keys(entry).length > 0) map[row.scent_id] = entry;
+  }
+  return map;
+}
+
+export async function upsertPremadePrice(
+  scentId: string,
+  prices: Partial<Record<BottleSize, number>>,
+): Promise<string | null> {
+  if (!supabase) return 'Supabase is not configured.';
+  const payload: Record<string, number> = {};
+  for (const size of [30, 50, 100] as BottleSize[]) {
+    const price = prices[size];
+    if (price !== undefined && Number.isFinite(price) && price > 0) payload[String(size)] = price;
+  }
+  if (Object.keys(payload).length === 0) return deletePremadePrice(scentId);
+  const { error } = await supabase
+    .from('premade_prices')
+    .upsert({ scent_id: scentId, prices: payload });
+  return error ? error.message : null;
+}
+
+export async function deletePremadePrice(scentId: string): Promise<string | null> {
+  if (!supabase) return 'Supabase is not configured.';
+  const { error } = await supabase.from('premade_prices').delete().eq('scent_id', scentId);
   return error ? error.message : null;
 }
 

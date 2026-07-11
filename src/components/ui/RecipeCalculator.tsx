@@ -13,9 +13,12 @@ import {
   type BottleSize,
   type Solvent,
 } from '../../lib/recipe';
+import { useCatalogStore } from '../../store/useCatalogStore';
 import { useScentStore } from '../../store/useScentStore';
 
 export function RecipeCalculator() {
+  // re-render when admin-set pricing loads/changes
+  useCatalogStore((s) => s.pricing);
   const percentages = useScentStore((s) => s.percentages);
   const selected = useScentStore((s) => s.selected);
   const bottleSize = useScentStore((s) => s.bottleSize);

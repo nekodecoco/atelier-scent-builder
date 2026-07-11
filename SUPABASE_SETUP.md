@@ -159,6 +159,41 @@ create policy "admin write custom premades" on public.custom_premades
 alter table public.premade_stock add column hidden boolean not null default false;
 ```
 
+## Editable pricing
+
+Lets the admin set builder prices per bottle size (plus the oil surcharge) and
+give each premade its own price. Run in **SQL Editor**:
+
+```sql
+create table public.shop_settings (
+  key text primary key,
+  value jsonb not null
+);
+alter table public.shop_settings enable row level security;
+create policy "public read settings" on public.shop_settings
+  for select using (true);
+create policy "admin write settings" on public.shop_settings
+  for all
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+insert into public.shop_settings (key, value) values
+  ('pricing', '{"bySize": {"30": 1450, "50": 2150, "100": 3600}, "oilSurchargePerMl": 25}');
+
+-- per-perfume prices; no row = perfume uses the builder size price
+create table public.premade_prices (
+  scent_id text primary key,
+  prices jsonb not null
+);
+alter table public.premade_prices enable row level security;
+create policy "public read premade prices" on public.premade_prices
+  for select using (true);
+create policy "admin write premade prices" on public.premade_prices
+  for all
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+```
+
 ## Updating an order's status
 
 Orders start as `pending`. To update one after you've mixed/shipped it, run in SQL Editor:
