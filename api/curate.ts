@@ -146,7 +146,9 @@ async function curate(input: CurateInput, apiKey: string): Promise<CurateResult>
         contents,
         generationConfig: {
           temperature: 0.9,
-          maxOutputTokens: 600,
+          // flash-latest is a thinking model: internal reasoning counts against
+          // this cap, so leave generous headroom or the JSON truncates mid-string
+          maxOutputTokens: 4096,
           responseMimeType: 'application/json',
           responseSchema: RESPONSE_SCHEMA,
         },
