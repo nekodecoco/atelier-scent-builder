@@ -36,7 +36,8 @@ interface CurateResult {
   suggestion?: CurateSuggestion;
 }
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+// rolling alias — pinned versions age out of the free tier (2.0-flash now has limit: 0)
+const GEMINI_MODEL = 'gemini-flash-latest';
 
 function buildSystemPrompt(input: CurateInput): string {
   const list = (items: ConciergeIngredient[]) =>
