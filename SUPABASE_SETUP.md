@@ -194,6 +194,26 @@ create policy "admin write premade prices" on public.premade_prices
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 ```
 
+## Product photos (optional)
+
+Each perfume card shows a generative color wash by default; paste an image URL
+per perfume in the admin panel to show a real product photo instead. Run in
+**SQL Editor**:
+
+```sql
+create table public.premade_images (
+  scent_id text primary key,
+  url text not null
+);
+alter table public.premade_images enable row level security;
+create policy "public read premade images" on public.premade_images
+  for select using (true);
+create policy "admin write premade images" on public.premade_images
+  for all
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+```
+
 ## Updating an order's status
 
 Orders start as `pending`. To update one after you've mixed/shipped it, run in SQL Editor:

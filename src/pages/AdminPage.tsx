@@ -115,8 +115,8 @@ export function AdminPage() {
 
   return (
     <section className="mx-auto max-w-6xl px-5 pb-24 pt-32">
-      <p className="font-sans text-[11px] tracking-luxe text-gold-deep dark:text-gold">BACK OF HOUSE</p>
-      <h1 className="mt-3 font-display text-5xl font-medium text-neutral-900 dark:text-cream">
+      <p className="font-sans text-[10px] font-medium tracking-[0.2em] text-muted">BACK OF HOUSE</p>
+      <h1 className="mt-2 font-grotesk text-4xl font-extrabold uppercase tracking-tightest text-ink sm:text-5xl">
         Admin
       </h1>
       <div className="mt-4">{body}</div>

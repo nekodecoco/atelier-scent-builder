@@ -1,40 +1,38 @@
-import { Moon, ShoppingBag, Sun, User } from 'lucide-react';
+import { ShoppingBag, User } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cartCount, useCartStore } from '../../store/useCartStore';
-import { useScentStore } from '../../store/useScentStore';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `transition-colors hover:text-gold-deep dark:hover:text-gold ${
-    isActive
-      ? 'text-gold-deep underline decoration-1 underline-offset-8 dark:text-gold'
-      : ''
-  }`;
+  `transition-colors hover:text-ink ${isActive ? 'text-ink underline underline-offset-4' : ''}`;
 
 export function Header() {
-  const theme = useScentStore((s) => s.theme);
-  const toggleTheme = useScentStore((s) => s.toggleTheme);
   const count = useCartStore((s) => cartCount(s.items));
   const openCart = useCartStore((s) => s.openCart);
   const isAdmin = useAuthStore((s) => s.isAdmin);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 border-b border-ivory-line/70 bg-ivory/80 backdrop-blur-md dark:border-night-line dark:bg-night/80">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-        <Link to="/" className="font-display text-lg tracking-luxe text-neutral-900 dark:text-cream">
-          ATELIER&nbsp;N°9
-        </Link>
-
-        <nav className="flex items-center gap-6 font-sans text-[11px] tracking-luxe text-stone">
-          <NavLink to="/collection" className={navClass}>
-            COLLECTION
-          </NavLink>
-          <Link
-            to="/#builder"
-            className="hidden transition-colors hover:text-gold-deep dark:hover:text-gold sm:block"
-          >
-            SCENT BUILDER
+    <header className="fixed inset-x-0 top-0 z-30 border-b border-line bg-paper/95 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-5 py-3.5 lg:px-8">
+        <div className="flex items-center gap-8">
+          <Link to="/" className="font-grotesk text-lg font-bold tracking-tightest text-ink">
+            Atelier N°9
           </Link>
+          <nav className="hidden items-center gap-5 font-sans text-[10px] font-medium tracking-[0.18em] text-muted md:flex">
+            <NavLink to="/collection" className={navClass}>
+              SHOP
+            </NavLink>
+            <NavLink to="/builder" className={navClass}>
+              SCENT BUILDER
+            </NavLink>
+            <Link to="/builder" className="transition-colors hover:text-ink">
+              CONCIERGE
+            </Link>
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-5 font-sans text-[10px] font-medium tracking-[0.18em] text-muted">
+          <span className="hidden sm:inline">PHP</span>
           {isAdmin && (
             <NavLink to="/admin" className={navClass}>
               ADMIN
@@ -47,25 +45,26 @@ export function Header() {
             type="button"
             onClick={openCart}
             aria-label={`Open cart, ${count} item${count === 1 ? '' : 's'}`}
-            className="relative flex items-center gap-1.5 transition-colors hover:text-gold-deep dark:hover:text-gold"
+            className="relative transition-colors hover:text-ink"
           >
             <ShoppingBag size={15} aria-hidden />
             {count > 0 && (
-              <span className="absolute -right-2.5 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-deep px-1 font-sans text-[9px] font-medium text-ivory dark:bg-gold dark:text-night">
+              <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 font-sans text-[9px] font-medium text-paper">
                 {count}
               </span>
             )}
           </button>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="rounded-full border border-ivory-line p-2 text-neutral-700 transition-colors hover:border-gold-deep hover:text-gold-deep dark:border-night-line dark:text-cream dark:hover:border-gold dark:hover:text-gold"
-          >
-            {theme === 'dark' ? <Sun size={14} aria-hidden /> : <Moon size={14} aria-hidden />}
-          </button>
-        </nav>
+        </div>
       </div>
+
+      <nav className="flex items-center gap-5 border-t border-line px-5 py-2 font-sans text-[10px] font-medium tracking-[0.18em] text-muted md:hidden">
+        <NavLink to="/collection" className={navClass}>
+          SHOP
+        </NavLink>
+        <NavLink to="/builder" className={navClass}>
+          SCENT BUILDER
+        </NavLink>
+      </nav>
     </header>
   );
 }

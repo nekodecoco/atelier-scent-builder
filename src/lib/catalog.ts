@@ -264,6 +264,35 @@ export async function deletePremadePrice(scentId: string): Promise<string | null
   return error ? error.message : null;
 }
 
+export type PremadeImageMap = Record<string, string>;
+
+/** Optional product photo per perfume; missing row/table → generative wash. */
+export async function fetchPremadeImages(): Promise<PremadeImageMap> {
+  if (!supabase) return {};
+  const { data, error } = await supabase.from('premade_images').select('scent_id, url');
+  if (error || !data) return {};
+  const map: PremadeImageMap = {};
+  for (const row of data as { scent_id: string; url: string }[]) {
+    if (typeof row.url === 'string' && /^https?:\/\//.test(row.url)) map[row.scent_id] = row.url;
+  }
+  return map;
+}
+
+export async function upsertPremadeImage(scentId: string, url: string): Promise<string | null> {
+  if (!supabase) return 'Supabase is not configured.';
+  const trimmed = url.trim();
+  if (!trimmed) return deletePremadeImage(scentId);
+  if (!/^https?:\/\//.test(trimmed)) return 'Image must be an http(s) URL.';
+  const { error } = await supabase.from('premade_images').upsert({ scent_id: scentId, url: trimmed });
+  return error ? error.message : null;
+}
+
+export async function deletePremadeImage(scentId: string): Promise<string | null> {
+  if (!supabase) return 'Supabase is not configured.';
+  const { error } = await supabase.from('premade_images').delete().eq('scent_id', scentId);
+  return error ? error.message : null;
+}
+
 export async function fetchAllOrders(): Promise<{ orders?: AdminOrderRecord[]; error?: string }> {
   if (!supabase) return { error: 'Supabase is not configured.' };
   const { data, error } = await supabase

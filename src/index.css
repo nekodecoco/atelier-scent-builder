@@ -19,14 +19,9 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cfc6ae;
+  background: #c9c3b2;
   border-radius: 8px;
-  border: 3px solid #f7f3ea;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #3a342a;
-  border-color: #0f0e0c;
+  border: 3px solid #f2efe6;
 }
 
 /* scroll-in reveal (see Reveal.tsx) */
@@ -88,13 +83,8 @@ button:not(:disabled):active {
 }
 
 body {
-  @apply bg-ivory text-neutral-800 antialiased;
-  --slider-track: #ddd3bd;
-}
-
-.dark body {
-  @apply bg-night text-cream;
-  --slider-track: #2a2620;
+  @apply bg-paper text-ink antialiased;
+  --slider-track: #dcd8ca;
 }
 
 /* Note sliders — color driven by --slider-color set inline per note */
@@ -121,7 +111,7 @@ input[type='range'].note-slider::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #f7f3ea;
+  background: #f2efe6;
   border: 2.5px solid var(--slider-color);
   transition: transform 120ms ease;
 }

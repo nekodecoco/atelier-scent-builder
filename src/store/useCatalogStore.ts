@@ -3,11 +3,13 @@ import {
   fetchAvailability,
   fetchCustomIngredients,
   fetchCustomPremades,
+  fetchPremadeImages,
   fetchPremadePrices,
   fetchPricing,
   fetchStock,
   type AvailabilityMap,
   type HiddenMap,
+  type PremadeImageMap,
   type StockMap,
 } from '../lib/catalog';
 import {
@@ -38,6 +40,7 @@ interface CatalogState {
   customPremades: PremadeScent[];
   pricing: PricingConfig;
   premadePrices: PremadePriceMap;
+  premadeImages: PremadeImageMap;
   loaded: boolean;
   load: () => Promise<void>;
   isInStock: (scentId: string) => boolean;
@@ -52,10 +55,11 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   customPremades: [],
   pricing: { bySize: { 30: 1450, 50: 2150, 100: 3600 }, oilSurchargePerMl: 25 },
   premadePrices: {},
+  premadeImages: {},
   loaded: false,
 
   load: async () => {
-    const [{ stock, hidden }, availability, customIngredients, customPremades, pricing, premadePrices] =
+    const [{ stock, hidden }, availability, customIngredients, customPremades, pricing, premadePrices, premadeImages] =
       await Promise.all([
         fetchStock(),
         fetchAvailability(),
@@ -63,6 +67,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         fetchCustomPremades(),
         fetchPricing(),
         fetchPremadePrices(),
+        fetchPremadeImages(),
       ]);
 
     // register before set() so 3D/recipe/pricing lookups resolve when components re-render
@@ -77,6 +82,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       customPremades,
       pricing,
       premadePrices,
+      premadeImages,
       loaded: true,
     });
 

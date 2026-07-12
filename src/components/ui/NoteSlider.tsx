@@ -11,10 +11,9 @@ export function NoteSlider({ note }: { note: NoteKey }) {
   const selectedId = useScentStore((s) => s.selected[note]);
   const setPercentage = useScentStore((s) => s.setPercentage);
   const toggleLock = useScentStore((s) => s.toggleLock);
-  const theme = useScentStore((s) => s.theme);
 
   const ingredient = getIngredient(note, selectedId);
-  const ink = inkFor(ingredient.color, theme);
+  const ink = inkFor(ingredient.color);
   const locked = locks[note];
   const frozen = isNoteFrozen(locks, note);
 

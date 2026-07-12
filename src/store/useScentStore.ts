@@ -9,8 +9,6 @@ import {
   type Solvent,
 } from '../lib/recipe';
 
-export type Theme = 'dark' | 'light';
-
 interface ScentState {
   percentages: Percentages;
   locks: Locks;
@@ -23,7 +21,6 @@ interface ScentState {
   /** Fragrance oil concentration, percent (15–25) */
   concentration: number;
   solvent: Solvent;
-  theme: Theme;
   /** True when the user pressed "Blend my scent" — liquids merge into one color */
   blended: boolean;
 
@@ -37,7 +34,6 @@ interface ScentState {
   setBottleSize: (size: BottleSize) => void;
   setConcentration: (pct: number) => void;
   setSolvent: (solvent: Solvent) => void;
-  toggleTheme: () => void;
   resetBlend: () => void;
 }
 
@@ -56,7 +52,6 @@ export const useScentStore = create<ScentState>((set) => ({
   bottleSize: 50,
   concentration: DEFAULT_CONCENTRATION,
   solvent: 'alcohol',
-  theme: 'dark',
   blended: false,
 
   setPercentage: (note, value) =>
@@ -95,9 +90,6 @@ export const useScentStore = create<ScentState>((set) => ({
     }),
 
   setSolvent: (solvent) => set({ solvent }),
-
-  toggleTheme: () =>
-    set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
 
   resetBlend: () =>
     set({

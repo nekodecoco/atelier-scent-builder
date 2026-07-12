@@ -72,12 +72,12 @@ export function ScentBuilder() {
   };
 
   return (
-    <section id="builder" className="mx-auto max-w-6xl px-5 py-24">
-      <p className="font-sans text-[11px] tracking-luxe text-gold-deep dark:text-gold">THE ATELIER</p>
-      <h2 className="mt-3 font-display text-5xl font-medium text-neutral-900 dark:text-cream">
-        Scent builder
+    <section id="builder" className="mx-auto max-w-6xl px-5 py-16">
+      <p className="font-sans text-[10px] font-medium tracking-[0.2em] text-muted">THE ATELIER</p>
+      <h2 className="mt-2 font-grotesk text-4xl font-extrabold uppercase tracking-tightest text-ink sm:text-5xl">
+        The Scent Builder
       </h2>
-      <p className="mt-3 max-w-lg font-sans text-sm leading-relaxed text-stone">
+      <p className="mt-3 max-w-lg font-sans text-sm leading-relaxed text-muted">
         Every blend totals exactly 100%. Shift one note and the others rebalance —
         lock a note to hold it in place.
       </p>

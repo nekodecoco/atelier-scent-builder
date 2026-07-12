@@ -27,7 +27,6 @@ export function RecipeCalculator() {
   const setConcentration = useScentStore((s) => s.setConcentration);
   const solvent = useScentStore((s) => s.solvent);
   const setSolvent = useScentStore((s) => s.setSolvent);
-  const theme = useScentStore((s) => s.theme);
 
   const recipe = computeRecipe(bottleSize, percentages, concentration);
   const sliderFill =
@@ -116,7 +115,7 @@ export function RecipeCalculator() {
                 {NOTE_LABELS[note]} · {percentages[note]}%
               </div>
               <div className="mt-1 truncate font-sans text-[11px] text-stone">{ingredient.name}</div>
-              <div className="mt-1.5 font-display text-2xl" style={{ color: inkFor(ingredient.color, theme) }}>
+              <div className="mt-1.5 font-display text-2xl" style={{ color: inkFor(ingredient.color) }}>
                 {ml} mL
               </div>
               <div className="font-sans text-[10px] text-stone-dim">≈ {drops} drops</div>

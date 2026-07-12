@@ -1,11 +1,8 @@
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
-import { useScentStore } from '../../store/useScentStore';
 import { Bottle } from './Bottle';
 
 export function Scene() {
-  const theme = useScentStore((s) => s.theme);
-
   return (
     <Canvas
       dpr={[1, 2]}
@@ -13,7 +10,7 @@ export function Scene() {
       gl={{ antialias: true, alpha: true }}
       style={{ touchAction: 'pan-y' }}
     >
-      <color attach="background" args={[theme === 'dark' ? '#131210' : '#efe8d9']} />
+      <color attach="background" args={['#ece7d8']} />
       <ambientLight intensity={0.4} />
       <Environment resolution={256}>
         <Lightformer intensity={2.2} position={[0, 4, 3]} scale={[7, 3, 1]} color="#ffffff" />
@@ -26,7 +23,7 @@ export function Scene() {
 
       <ContactShadows
         position={[0, -1.9, 0]}
-        opacity={theme === 'dark' ? 0.5 : 0.3}
+        opacity={0.3}
         scale={9}
         blur={2.4}
         far={3.5}

@@ -1,6 +1,5 @@
 import { getIngredient, NOTE_KEYS, type NoteKey } from '../data/ingredients';
 import type { Percentages } from './blend';
-import type { Theme } from '../store/useScentStore';
 
 function hexToHsl(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -35,12 +34,11 @@ function hslToHex(h: number, s: number, l: number): string {
 /**
  * Ingredient colors are tuned as liquid tints, not text ink. Pale notes like
  * jasmine or white musk vanish as text on the ivory background, so clamp
- * lightness toward readable ink for the active theme.
+ * lightness toward readable ink on the paper background.
  */
-export function inkFor(hex: string, theme: Theme): string {
+export function inkFor(hex: string): string {
   const [h, s, l] = hexToHsl(hex);
-  if (theme === 'light') return l > 0.42 ? hslToHex(h, Math.min(s + 0.08, 1), 0.38) : hex;
-  return l < 0.5 ? hslToHex(h, s, 0.58) : hex;
+  return l > 0.42 ? hslToHex(h, Math.min(s + 0.08, 1), 0.38) : hex;
 }
 
 /**
