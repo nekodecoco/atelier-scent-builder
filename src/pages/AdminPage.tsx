@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 import { AdminOrders } from '../components/ui/admin/AdminOrders';
 import { CostingCalculator } from '../components/ui/admin/CostingCalculator';
+import { HeroEditor } from '../components/ui/admin/HeroEditor';
 import { IngredientToggles } from '../components/ui/admin/IngredientToggles';
 import { NoteEditor } from '../components/ui/admin/NoteEditor';
 import { PerfumeEditor } from '../components/ui/admin/PerfumeEditor';
@@ -66,6 +67,13 @@ export function AdminPage() {
           hint="What the scent builder charges per bottle size at 15% oil, plus the surcharge for stronger blends. Premades have their own prices below."
         >
           <PricingEditor />
+        </Section>
+
+        <Section
+          title="Hero images"
+          hint="Full-bleed photos for the three landing-page hero slides. Each blank slot falls back to its generative visual. Recommended: wide, high-resolution shots (landscape)."
+        >
+          <HeroEditor />
         </Section>
 
         <Section

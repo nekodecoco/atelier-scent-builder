@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PREMADE_SCENTS } from '../../data/premadeScents';
@@ -16,14 +16,79 @@ const HOUSE_FORMULA = {
   percentages: { ...MASTER_BLEND },
 };
 
-const ctaClass =
-  'inline-block border border-ink px-7 py-3 font-sans text-[10px] font-medium tracking-[0.2em] text-ink transition-colors hover:bg-ink hover:text-paper';
+const ctaDark =
+  'inline-block border border-black px-7 py-3 font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-black transition-colors hover:bg-black hover:text-white';
+const ctaLight =
+  'inline-block border border-white px-7 py-3 font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-white transition-colors hover:bg-white hover:text-black';
+
+/**
+ * One hero slide. When `image` is set it fills full-bleed with a scrim and a
+ * slow zoom on the active slide; otherwise it renders the generative `background`
+ * fallback. `tone` flips the overlay text/CTA between dark (light surfaces) and
+ * light (photos and the dark featured wash).
+ */
+function HeroSlide({
+  image,
+  background,
+  tone,
+  active,
+  eyebrow,
+  title,
+  children,
+}: {
+  image?: string;
+  background: ReactNode;
+  tone: 'dark' | 'light';
+  active: boolean;
+  eyebrow: string;
+  title: ReactNode;
+  children: ReactNode;
+}) {
+  const light = tone === 'light' || Boolean(image);
+  return (
+    <div className="relative h-full overflow-hidden">
+      {image ? (
+        <>
+          <img
+            src={image}
+            alt=""
+            className={`absolute inset-0 h-full w-full object-cover transition-transform duration-[7000ms] ease-out ${
+              active ? 'scale-105' : 'scale-100'
+            }`}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
+        </>
+      ) : (
+        background
+      )}
+
+      <div className="absolute inset-x-0 bottom-0 px-5 pb-14 lg:px-8">
+        <p
+          className={`font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] ${
+            light ? 'text-white/80' : 'text-graphite'
+          }`}
+        >
+          {eyebrow}
+        </p>
+        <div
+          className={`mt-3 max-w-3xl font-caslon text-[13vw] leading-[1.02] tracking-[-0.02em] sm:text-7xl lg:text-8xl ${
+            light ? 'text-white drop-shadow' : 'text-black'
+          }`}
+        >
+          {title}
+        </div>
+        <div className="mt-6 flex flex-wrap items-center gap-6">{children}</div>
+      </div>
+    </div>
+  );
+}
 
 export function HeroSlider() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const hiddenPremades = useCatalogStore((s) => s.hiddenPremades);
-  const imageMap = useCatalogStore((s) => s.premadeImages);
+  const premadeImages = useCatalogStore((s) => s.premadeImages);
+  const heroImages = useCatalogStore((s) => s.heroImages);
   useCatalogStore((s) => s.premadePrices);
   useCatalogStore((s) => s.pricing);
 
@@ -40,84 +105,102 @@ export function HeroSlider() {
 
   const featured = PREMADE_SCENTS.find((s) => !hiddenPremades[s.id]) ?? PREMADE_SCENTS[0];
 
+  // the featured slide is always dark; brand/builder are dark only once a photo is set
+  const darkAtBottom = [Boolean(heroImages['hero-1']), true, Boolean(heroImages['hero-3'])][index];
+
   const slides = [
-    <div key="brand" className="relative h-full bg-gradient-to-b from-paper to-paper-deep">
-      <div
-        aria-hidden
-        className="absolute right-[12%] top-0 hidden h-[68%] w-24 opacity-90 sm:block"
-        style={{
-          background: 'linear-gradient(160deg, #8a6b4a 0%, #5c4632 60%, #3d2e20 100%)',
-          clipPath: 'polygon(35% 0, 78% 3%, 100% 62%, 58% 100%, 22% 66%, 40% 30%)',
-        }}
-      />
-      <div className="absolute bottom-[22%] right-[22%] hidden sm:block">
-        <ProductBottle formula={HOUSE_FORMULA} name="Golden Hour" className="h-56 w-auto" />
-      </div>
-      <div className="absolute inset-x-0 bottom-0 px-5 pb-14 lg:px-8">
-        <h1 className="max-w-3xl font-grotesk text-[15vw] font-extrabold uppercase leading-[0.9] tracking-tightest text-ink sm:text-7xl lg:text-8xl">
+    <HeroSlide
+      key="brand"
+      image={heroImages['hero-1']}
+      active={index === 0}
+      tone="dark"
+      eyebrow="ATELIER N°9"
+      title={
+        <>
           Radical
           <br />
           Perfumery
-        </h1>
-        <div className="mt-6 flex flex-wrap items-center gap-6">
-          <p className="max-w-xs font-sans text-[10px] uppercase leading-relaxed tracking-[0.14em] text-muted">
-            Hand-mixed in Manila. Composed by you in 3D, or curated by our AI concierge.
-          </p>
-          <Link to="/collection" className={ctaClass}>
-            DISCOVER THE COLLECTION
-          </Link>
-        </div>
-      </div>
-    </div>,
+        </>
+      }
+      background={
+        <>
+          <div className="absolute inset-0 bg-bone" />
+          <div className="absolute bottom-[22%] right-[22%] hidden sm:block">
+            <ProductBottle formula={HOUSE_FORMULA} name="Golden Hour" className="h-56 w-auto" />
+          </div>
+        </>
+      }
+    >
+      <p
+        className={`max-w-xs font-hanken text-sm leading-relaxed ${
+          heroImages['hero-1'] ? 'text-white/90' : 'text-graphite'
+        }`}
+      >
+        Hand-mixed in Manila. Composed by you in 3D, or curated by our AI concierge.
+      </p>
+      <Link to="/collection" className={heroImages['hero-1'] ? ctaLight : ctaDark}>
+        DISCOVER THE COLLECTION
+      </Link>
+    </HeroSlide>,
 
-    <ScentWash key="featured" formula={featured.formula} imageUrl={imageMap[featured.id]} className="h-full">
-      <div className="absolute bottom-[18%] right-[16%] hidden sm:block">
-        <ProductBottle formula={featured.formula} name={featured.name} className="h-60 w-auto" />
-      </div>
-      <div className="absolute inset-x-0 bottom-0 px-5 pb-14 lg:px-8">
-        <p className="font-sans text-[10px] font-medium tracking-[0.2em] text-paper/80">
-          FEATURED · {featured.tagline.toUpperCase()}
-        </p>
-        <h2 className="mt-3 max-w-3xl font-grotesk text-[13vw] font-extrabold uppercase leading-[0.9] tracking-tightest text-paper drop-shadow sm:text-7xl">
-          {featured.name}
-        </h2>
-        <div className="mt-6 flex items-center gap-6">
-          <span className="font-sans text-sm text-paper">{formatPeso(premadePriceFor(featured.id, 50))}</span>
-          <Link
-            to="/collection"
-            className="inline-block border border-paper px-7 py-3 font-sans text-[10px] font-medium tracking-[0.2em] text-paper transition-colors hover:bg-paper hover:text-ink"
-          >
-            DISCOVER
-          </Link>
+    <HeroSlide
+      key="featured"
+      image={heroImages['hero-2']}
+      active={index === 1}
+      tone="light"
+      eyebrow={`FEATURED · ${featured.tagline.toUpperCase()}`}
+      title={featured.name}
+      background={
+        <div className="absolute inset-0">
+          <ScentWash formula={featured.formula} imageUrl={premadeImages[featured.id]} className="h-full">
+            <div className="absolute bottom-[18%] right-[16%] hidden sm:block">
+              <ProductBottle formula={featured.formula} name={featured.name} className="h-60 w-auto" />
+            </div>
+          </ScentWash>
         </div>
-      </div>
-    </ScentWash>,
+      }
+    >
+      <span className="font-hanken text-sm text-white">{formatPeso(premadePriceFor(featured.id, 50))}</span>
+      <Link to="/collection" className={ctaLight}>
+        DISCOVER
+      </Link>
+    </HeroSlide>,
 
-    <div key="builder" className="relative h-full bg-paper-deep">
-      <div aria-hidden className="absolute right-[14%] top-[16%] hidden gap-3 sm:flex">
-        {['#c9a53a', '#c14a6e', '#a5713d'].map((color) => (
-          <span key={color} className="h-24 w-8" style={{ background: color, opacity: 0.8 }} />
-        ))}
-      </div>
-      <div className="absolute inset-x-0 bottom-0 px-5 pb-14 lg:px-8">
-        <p className="font-sans text-[10px] font-medium tracking-[0.2em] text-muted">
-          THE 3D SCENT BUILDER
-        </p>
-        <h2 className="mt-3 max-w-3xl font-grotesk text-[13vw] font-extrabold uppercase leading-[0.9] tracking-tightest text-ink sm:text-7xl">
+    <HeroSlide
+      key="builder"
+      image={heroImages['hero-3']}
+      active={index === 2}
+      tone="dark"
+      eyebrow="THE 3D SCENT BUILDER"
+      title={
+        <>
           Composed
           <br />
           by you
-        </h2>
-        <div className="mt-6 flex flex-wrap items-center gap-6">
-          <p className="max-w-xs font-sans text-[10px] uppercase leading-relaxed tracking-[0.14em] text-muted">
-            Balance three layers in a live 3D bottle — or describe a feeling and let the concierge compose it.
-          </p>
-          <Link to="/builder" className={ctaClass}>
-            START COMPOSING
-          </Link>
-        </div>
-      </div>
-    </div>,
+        </>
+      }
+      background={
+        <>
+          <div className="absolute inset-0 bg-bone-dim" />
+          <div aria-hidden className="absolute right-[14%] top-[16%] hidden gap-3 sm:flex">
+            <span className="h-24 w-8 bg-black" />
+            <span className="h-24 w-8 bg-graphite" />
+            <span className="h-24 w-8 bg-lime" />
+          </div>
+        </>
+      }
+    >
+      <p
+        className={`max-w-xs font-hanken text-sm leading-relaxed ${
+          heroImages['hero-3'] ? 'text-white/90' : 'text-graphite'
+        }`}
+      >
+        Balance three layers in a live 3D bottle — or describe a feeling and let the concierge compose it.
+      </p>
+      <Link to="/builder" className={heroImages['hero-3'] ? ctaLight : ctaDark}>
+        START COMPOSING
+      </Link>
+    </HeroSlide>,
   ];
 
   return (
@@ -147,23 +230,42 @@ export function HeroSlider() {
           type="button"
           onClick={() => setIndex((i) => (i + SLIDE_COUNT - 1) % SLIDE_COUNT)}
           aria-label="Previous slide"
-          className="p-1 text-ink/70 transition-colors hover:text-ink"
+          className={`p-1 transition-colors ${
+            darkAtBottom ? 'text-white/70 hover:text-white' : 'text-black/70 hover:text-black'
+          }`}
         >
           <ChevronLeft size={16} aria-hidden />
         </button>
         <span className="flex items-center gap-1.5" aria-hidden>
           {Array.from({ length: SLIDE_COUNT }, (_, i) => (
-            <span key={i} className={`h-0.5 w-4 ${i === index ? 'bg-ink' : 'bg-ink/25'}`} />
+            <span
+              key={i}
+              className={`h-0.5 w-4 ${
+                i === index
+                  ? darkAtBottom
+                    ? 'bg-white'
+                    : 'bg-black'
+                  : darkAtBottom
+                    ? 'bg-white/30'
+                    : 'bg-black/25'
+              }`}
+            />
           ))}
         </span>
-        <span className="font-sans text-[9px] tracking-[0.18em] text-muted">
+        <span
+          className={`font-jetbrains text-[9px] tracking-[0.1em] ${
+            darkAtBottom ? 'text-white/80' : 'text-graphite'
+          }`}
+        >
           0{index + 1} / 0{SLIDE_COUNT}
         </span>
         <button
           type="button"
           onClick={() => setIndex((i) => (i + 1) % SLIDE_COUNT)}
           aria-label="Next slide"
-          className="p-1 text-ink/70 transition-colors hover:text-ink"
+          className={`p-1 transition-colors ${
+            darkAtBottom ? 'text-white/70 hover:text-white' : 'text-black/70 hover:text-black'
+          }`}
         >
           <ChevronRight size={16} aria-hidden />
         </button>
