@@ -5,15 +5,17 @@ import { PREMADE_SCENTS } from '../../../data/premadeScents';
 import type { Percentages } from '../../../lib/blend';
 import {
   deleteCustomPremade,
+  deletePremadeImage,
   setPremadeHidden,
+  uploadPremadeImage,
   upsertCustomPremade,
-  upsertPremadeImage,
   upsertPremadePrice,
 } from '../../../lib/catalog';
 import { priceFor } from '../../../lib/pricing';
 import type { BottleSize } from '../../../lib/recipe';
 import { useCatalogStore } from '../../../store/useCatalogStore';
 import { BottlePreview } from '../BottlePreview';
+import { ImageUploadField } from './ImageUploadField';
 
 interface FormState {
   id?: string;
@@ -40,55 +42,26 @@ const inputClass =
   'w-full rounded border border-ivory-line bg-white/70 px-3 py-2.5 font-sans text-sm text-neutral-900 outline-none placeholder:text-stone/50 focus:border-gold-deep dark:border-night-line dark:bg-night-card dark:text-cream dark:focus:border-gold';
 const labelClass = 'font-sans text-[10px] uppercase tracking-luxe text-stone-dim';
 
-/** Optional product photo URL — blank shows the generative color wash */
+/** Optional product photo — blank shows the generative color wash */
 function PremadeImageField({ scentId }: { scentId: string }) {
   const saved = useCatalogStore((s) => s.premadeImages[scentId] ?? '');
   const reload = useCatalogStore((s) => s.load);
-  const [value, setValue] = useState(saved);
-  const [state, setState] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => setValue(saved), [saved]);
-
-  const save = async () => {
-    setState('saving');
-    const err = await upsertPremadeImage(scentId, value);
-    if (err) {
-      setState('idle');
-      setError(err);
-      return;
-    }
-    setError(null);
-    await reload();
-    setState('saved');
-    setTimeout(() => setState('idle'), 1500);
-  };
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      <label className="flex flex-1 items-center gap-1.5 font-sans text-[9px] uppercase tracking-luxe text-stone-dim">
-        Photo URL
-        <input
-          type="url"
-          value={value}
-          placeholder="https://… (blank = color wash)"
-          onChange={(e) => setValue(e.target.value)}
-          aria-label="Product photo URL"
-          className="min-w-40 flex-1 rounded border border-ivory-line bg-white/70 px-2 py-1.5 font-sans text-xs normal-case tracking-normal text-neutral-900 outline-none placeholder:text-stone/40 focus:border-gold-deep"
-        />
-      </label>
-      <button
-        type="button"
-        onClick={save}
-        disabled={state === 'saving'}
-        className="flex items-center gap-1 rounded border border-gold-deep px-3 py-1.5 font-sans text-[9px] tracking-luxe text-gold-deep transition-colors hover:bg-gold-deep hover:text-ivory disabled:opacity-50"
-      >
-        {state === 'saving' && <Loader2 size={10} className="animate-spin" aria-hidden />}
-        {state === 'saved' && <Check size={10} aria-hidden />}
-        {state === 'saved' ? 'SAVED' : 'SAVE PHOTO'}
-      </button>
-      {error && <span className="font-sans text-[10px] text-red-400">{error}</span>}
-    </div>
+    <ImageUploadField
+      url={saved}
+      label="product photo"
+      onUpload={async (file) => {
+        const err = await uploadPremadeImage(scentId, file);
+        if (!err) await reload();
+        return err;
+      }}
+      onClear={async () => {
+        const err = await deletePremadeImage(scentId);
+        if (!err) await reload();
+        return err;
+      }}
+    />
   );
 }
 
