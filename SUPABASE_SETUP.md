@@ -194,21 +194,92 @@ create policy "admin write premade prices" on public.premade_prices
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 ```
 
-## Product photos (optional)
+## Product & hero photos (optional)
 
-Each perfume card shows a generative color wash by default; paste an image URL
-per perfume in the admin panel to show a real product photo instead. Run in
-**SQL Editor**:
+Each perfume card and hero slide shows a generative visual by default. In the
+admin panel you can **upload a photo directly** (file picker) for any perfume and
+for the three landing-page hero slides — the uploaded image then *replaces* the
+generated bottle/wash. Uploads need the Storage bucket **and** the two tables
+below; without them the app still runs and just shows the generative visuals.
+
+The SQL below is **idempotent** — the `if not exists` / `on conflict` /
+`drop policy if exists` guards mean you can paste the whole thing and re-run it
+safely even if you already created `premade_images` in an earlier setup.
+
+### 1. Storage bucket + policies
+
+The bucket must be **public** so saved public URLs render without signed access.
+You can create it from **Storage → Create bucket** (name it exactly
+`product-images`, tick **Public bucket**) or just let the first line below do it.
+Run in **SQL Editor**:
 
 ```sql
-create table public.premade_images (
+-- Create the public bucket if it isn't there yet
+insert into storage.buckets (id, name, public)
+values ('product-images', 'product-images', true)
+on conflict (id) do nothing;
+
+-- Public read of every object in the bucket
+drop policy if exists "public read product images" on storage.objects;
+create policy "public read product images"
+  on storage.objects for select
+  using (bucket_id = 'product-images');
+
+-- Admins may upload / replace / delete
+drop policy if exists "admin write product images" on storage.objects;
+create policy "admin write product images"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'product-images'
+    and exists (select 1 from public.admins where user_id = auth.uid())
+  );
+drop policy if exists "admin update product images" on storage.objects;
+create policy "admin update product images"
+  on storage.objects for update
+  using (
+    bucket_id = 'product-images'
+    and exists (select 1 from public.admins where user_id = auth.uid())
+  );
+drop policy if exists "admin delete product images" on storage.objects;
+create policy "admin delete product images"
+  on storage.objects for delete
+  using (
+    bucket_id = 'product-images'
+    and exists (select 1 from public.admins where user_id = auth.uid())
+  );
+```
+
+### 2. Image-URL tables
+
+Perfume photos are keyed by `scent_id`; hero photos by slot (`hero-1`, `hero-2`,
+`hero-3`). Both store the uploaded file's public URL (or a pasted http(s) URL).
+Run in **SQL Editor**:
+
+```sql
+create table if not exists public.premade_images (
   scent_id text primary key,
   url text not null
 );
 alter table public.premade_images enable row level security;
+drop policy if exists "public read premade images" on public.premade_images;
 create policy "public read premade images" on public.premade_images
   for select using (true);
+drop policy if exists "admin write premade images" on public.premade_images;
 create policy "admin write premade images" on public.premade_images
+  for all
+  using (exists (select 1 from public.admins where user_id = auth.uid()))
+  with check (exists (select 1 from public.admins where user_id = auth.uid()));
+
+create table if not exists public.hero_images (
+  slot text primary key,
+  url text not null
+);
+alter table public.hero_images enable row level security;
+drop policy if exists "public read hero images" on public.hero_images;
+create policy "public read hero images" on public.hero_images
+  for select using (true);
+drop policy if exists "admin write hero images" on public.hero_images;
+create policy "admin write hero images" on public.hero_images
   for all
   using (exists (select 1 from public.admins where user_id = auth.uid()))
   with check (exists (select 1 from public.admins where user_id = auth.uid()));

@@ -45,13 +45,15 @@ export function LandingProductCard({ scent, tag }: { scent: PremadeScent; tag?: 
             {!inStock ? 'OUT OF STOCK' : tag}
           </span>
         )}
-        <div className="absolute inset-0 flex items-end justify-center pb-4">
-          <ProductBottle
-            formula={scent.formula}
-            name={scent.name}
-            className="h-[72%] w-auto transition-transform duration-500 group-hover:scale-[1.04]"
-          />
-        </div>
+        {!imageUrl && (
+          <div className="absolute inset-0 flex items-end justify-center pb-4">
+            <ProductBottle
+              formula={scent.formula}
+              name={scent.name}
+              className="h-[72%] w-auto transition-transform duration-500 group-hover:scale-[1.04]"
+            />
+          </div>
+        )}
       </ScentWash>
 
       <div className="flex flex-1 flex-col items-center px-2 pb-5 pt-4 text-center">

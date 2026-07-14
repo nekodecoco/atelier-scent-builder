@@ -293,6 +293,71 @@ export async function deletePremadeImage(scentId: string): Promise<string | null
   return error ? error.message : null;
 }
 
+/** Public Storage bucket that holds all admin-uploaded imagery. */
+const IMAGE_BUCKET = 'product-images';
+
+/**
+ * Upload a file to the shared image bucket and return its public URL.
+ * Fixed path + upsert overwrites in place (no orphaned objects); a `?t=`
+ * cache-buster makes the CDN serve the fresh image after a replace.
+ */
+export async function uploadImage(
+  path: string,
+  file: File,
+): Promise<{ url?: string; error?: string }> {
+  if (!supabase) return { error: 'Supabase is not configured.' };
+  const { error } = await supabase.storage
+    .from(IMAGE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) return { error: error.message };
+  const { data } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path);
+  if (!data?.publicUrl) return { error: 'Could not resolve the uploaded image URL.' };
+  return { url: `${data.publicUrl}?t=${Date.now()}` };
+}
+
+/** Upload a perfume photo, then point its `premade_images` row at the new URL. */
+export async function uploadPremadeImage(scentId: string, file: File): Promise<string | null> {
+  const { url, error } = await uploadImage(`premades/${scentId}`, file);
+  if (error || !url) return error ?? 'Upload failed.';
+  return upsertPremadeImage(scentId, url);
+}
+
+export type HeroImageMap = Record<string, string>;
+
+/** Optional full-bleed photo per hero slot; missing row/table → generative slide. */
+export async function fetchHeroImages(): Promise<HeroImageMap> {
+  if (!supabase) return {};
+  const { data, error } = await supabase.from('hero_images').select('slot, url');
+  if (error || !data) return {};
+  const map: HeroImageMap = {};
+  for (const row of data as { slot: string; url: string }[]) {
+    if (typeof row.url === 'string' && /^https?:\/\//.test(row.url)) map[row.slot] = row.url;
+  }
+  return map;
+}
+
+export async function upsertHeroImage(slot: string, url: string): Promise<string | null> {
+  if (!supabase) return 'Supabase is not configured.';
+  const trimmed = url.trim();
+  if (!trimmed) return deleteHeroImage(slot);
+  if (!/^https?:\/\//.test(trimmed)) return 'Image must be an http(s) URL.';
+  const { error } = await supabase.from('hero_images').upsert({ slot, url: trimmed });
+  return error ? error.message : null;
+}
+
+/** Upload a hero photo, then point its `hero_images` row at the new URL. */
+export async function uploadHeroImage(slot: string, file: File): Promise<string | null> {
+  const { url, error } = await uploadImage(`hero/${slot}`, file);
+  if (error || !url) return error ?? 'Upload failed.';
+  return upsertHeroImage(slot, url);
+}
+
+export async function deleteHeroImage(slot: string): Promise<string | null> {
+  if (!supabase) return 'Supabase is not configured.';
+  const { error } = await supabase.from('hero_images').delete().eq('slot', slot);
+  return error ? error.message : null;
+}
+
 export async function fetchAllOrders(): Promise<{ orders?: AdminOrderRecord[]; error?: string }> {
   if (!supabase) return { error: 'Supabase is not configured.' };
   const { data, error } = await supabase
