@@ -26,11 +26,20 @@ export default {
         'night-soft': '#161512',
         'night-card': '#1c1a17',
         'night-line': '#2a2620',
+        // "Radical Luxury" landing-page palette (assets/DESIGN.md)
+        bone: '#F9F8F6',
+        'bone-dim': '#E5E5E5',
+        graphite: '#444748',
+        lime: '#e7eb28',
+        'lime-dim': '#cace00',
       },
       fontFamily: {
         grotesk: ['Archivo', 'Inter', 'system-ui', 'sans-serif'],
         display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        caslon: ['"Libre Caslon Text"', 'Georgia', 'serif'],
+        hanken: ['"Hanken Grotesk"', 'Inter', 'sans-serif'],
+        jetbrains: ['"JetBrains Mono"', 'monospace'],
       },
       letterSpacing: {
         luxe: '0.22em',

@@ -32,17 +32,17 @@ export default function App() {
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>
-      <footer className="border-t border-line px-5 py-12 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-3">
-          <span className="font-grotesk text-lg font-bold tracking-tightest text-ink">
+      <footer className="border-t border-black/10 bg-bone px-5 py-16 lg:px-8">
+        <div className="grid gap-10 md:grid-cols-3">
+          <span className="font-caslon text-lg text-black">
             Atelier N°9
           </span>
-          <nav className="flex flex-col gap-2 font-sans text-[10px] font-medium tracking-[0.18em] text-muted">
-            <a href="/collection" className="transition-colors hover:text-ink">SHOP</a>
-            <a href="/builder" className="transition-colors hover:text-ink">SCENT BUILDER</a>
-            <a href="/account" className="transition-colors hover:text-ink">ACCOUNT</a>
+          <nav className="flex flex-col gap-2 font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-graphite">
+            <a href="/collection" className="transition-colors hover:text-black">SHOP</a>
+            <a href="/builder" className="transition-colors hover:text-black">SCENT BUILDER</a>
+            <a href="/account" className="transition-colors hover:text-black">ACCOUNT</a>
           </nav>
-          <p className="font-sans text-[10px] uppercase leading-relaxed tracking-[0.14em] text-muted">
+          <p className="font-hanken text-[13px] leading-relaxed text-graphite">
             Radical perfumery through hand-mixing, master formulation, and a formula that is
             entirely yours. Manila.
           </p>
