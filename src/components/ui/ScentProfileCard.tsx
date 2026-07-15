@@ -22,7 +22,7 @@ export function ScentProfileCard() {
   ).join(' ');
 
   return (
-    <div className="rounded-lg border border-ivory-line bg-white/60 p-4 dark:border-night-line dark:bg-night-card">
+    <div className="rounded-lg border border-ivory-line bg-white/60 p-5 dark:border-night-line dark:bg-night-card">
       <div className="flex items-center gap-2 font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
         <Fingerprint size={12} className="text-gold-deep dark:text-gold" aria-hidden />
         Scent profile
@@ -31,7 +31,7 @@ export function ScentProfileCard() {
       <div className="mt-2 flex items-center gap-3">
         <svg
           viewBox={`0 0 ${SIZE} ${SIZE}`}
-          className="h-24 w-24 flex-shrink-0"
+          className="h-44 w-44 flex-shrink-0"
           role="img"
           aria-label="Radar chart of the blend's character"
         >
@@ -83,7 +83,7 @@ export function ScentProfileCard() {
           })}
         </svg>
 
-        <p className="flex-1 font-display text-sm italic leading-snug text-neutral-800 dark:text-cream">
+        <p className="flex-1 font-display text-base italic leading-relaxed text-neutral-800 dark:text-cream">
           {profile.character}
         </p>
       </div>

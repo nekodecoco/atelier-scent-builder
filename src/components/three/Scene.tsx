@@ -6,7 +6,7 @@ export function Scene() {
   return (
     <Canvas
       dpr={[1, 2]}
-      camera={{ position: [0, 0.6, 6.2], fov: 30 }}
+      camera={{ position: [0, 0.6, 7.6], fov: 30 }}
       gl={{ antialias: true, alpha: true }}
       style={{ touchAction: 'pan-y' }}
     >
@@ -34,7 +34,7 @@ export function Scene() {
         makeDefault
         enablePan={false}
         minDistance={4}
-        maxDistance={8.5}
+        maxDistance={9.5}
         minPolarAngle={Math.PI / 3.4}
         maxPolarAngle={Math.PI / 1.85}
       />

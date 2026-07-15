@@ -12,6 +12,8 @@ export interface Ingredient {
   /** Gemstone-like liquid color rendered in the 3D bottle */
   color: string;
   scentTwins: ScentTwin[];
+  /** Filipino local-brand fragrances that carry the same note (optional) */
+  localTwins?: ScentTwin[];
 }
 
 export const NOTE_KEYS: NoteKey[] = ['top', 'heart', 'base'];
@@ -39,6 +41,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Colonia', house: 'Acqua di Parma' },
         { fragrance: 'Wood Sage & Sea Salt', house: 'Jo Malone' },
       ],
+      localTwins: [{ fragrance: 'Cosa Nostra', house: 'Wren Atelier' }],
     },
     {
       id: 'yuzu',
@@ -49,6 +52,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Un Jardin Après la Mousson', house: 'Hermès' },
         { fragrance: 'Yuzu Man', house: 'Caron' },
       ],
+      localTwins: [{ fragrance: 'Banaue Bliss', house: 'GP Fragrances' }],
     },
     {
       id: 'pink-pepper',
@@ -59,6 +63,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Baccarat Rouge 540', house: 'Maison Francis Kurkdjian' },
         { fragrance: 'Flowerbomb', house: 'Viktor & Rolf' },
       ],
+      localTwins: [{ fragrance: 'Des Roses', house: 'Edro Manille' }],
     },
     {
       id: 'neroli',
@@ -69,6 +74,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Neroli Portofino', house: 'Tom Ford' },
         { fragrance: 'Eau de Néroli Doré', house: 'Hermès' },
       ],
+      localTwins: [{ fragrance: 'Innocent', house: 'Tadhana' }],
     },
     {
       id: 'sicilian-lemon',
@@ -79,6 +85,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Light Blue', house: 'Dolce & Gabbana' },
         { fragrance: 'Eau de Sicile', house: 'Fragonard' },
       ],
+      localTwins: [{ fragrance: 'Stories for a Girl', house: 'Lucky Beauty' }],
     },
   ],
   heart: [
@@ -91,6 +98,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Portrait of a Lady', house: 'Frédéric Malle' },
         { fragrance: 'Rose Prick', house: 'Tom Ford' },
       ],
+      localTwins: [{ fragrance: 'Cerveza Rosa', house: 'Wren Atelier' }],
     },
     {
       id: 'jasmine-sambac',
@@ -101,6 +109,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: "J'adore", house: 'Dior' },
         { fragrance: 'Jasmin Rouge', house: 'Tom Ford' },
       ],
+      localTwins: [{ fragrance: 'Annapurna', house: 'Wren Atelier' }],
     },
     {
       id: 'iris',
@@ -111,6 +120,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Infusion d’Iris', house: 'Prada' },
         { fragrance: 'Dior Homme', house: 'Dior' },
       ],
+      localTwins: [{ fragrance: 'Ambrette', house: "L'Abondance" }],
     },
     {
       id: 'tuberose',
@@ -121,6 +131,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Fracas', house: 'Robert Piguet' },
         { fragrance: 'Do Son', house: 'Diptyque' },
       ],
+      localTwins: [{ fragrance: 'Rockstar', house: 'Tadhana' }],
     },
     {
       id: 'lavender',
@@ -131,6 +142,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Libre', house: 'Yves Saint Laurent' },
         { fragrance: 'Mon Guerlain', house: 'Guerlain' },
       ],
+      localTwins: [{ fragrance: 'Vieux Papier', house: 'GP Fragrances' }],
     },
   ],
   base: [
@@ -143,6 +155,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Santal 33', house: 'Le Labo' },
         { fragrance: 'Tam Dao', house: 'Diptyque' },
       ],
+      localTwins: [{ fragrance: 'El Cardenal', house: 'Wren Atelier' }],
     },
     {
       id: 'vanilla-bourbon',
@@ -153,6 +166,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Shalimar', house: 'Guerlain' },
         { fragrance: 'Tobacco Vanille', house: 'Tom Ford' },
       ],
+      localTwins: [{ fragrance: 'Cookie Dough', house: 'Perfume Dessert' }],
     },
     {
       id: 'amber',
@@ -163,6 +177,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Grand Soir', house: 'Maison Francis Kurkdjian' },
         { fragrance: 'Ambre Sultan', house: 'Serge Lutens' },
       ],
+      localTwins: [{ fragrance: 'Lover', house: 'Tadhana' }],
     },
     {
       id: 'oud',
@@ -173,6 +188,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'Oud Wood', house: 'Tom Ford' },
         { fragrance: 'Oud Ispahan', house: 'Dior' },
       ],
+      localTwins: [{ fragrance: 'Manila Oud', house: 'Wren Atelier' }],
     },
     {
       id: 'white-musk',
@@ -183,6 +199,7 @@ export const INGREDIENTS: Record<NoteKey, Ingredient[]> = {
         { fragrance: 'For Her', house: 'Narciso Rodriguez' },
         { fragrance: 'Glossier You', house: 'Glossier' },
       ],
+      localTwins: [{ fragrance: 'Smoky Gourmand', house: 'Wren Atelier' }],
     },
   ],
 };

@@ -149,8 +149,8 @@ export function RecipeCalculator() {
       </div>
 
       <p className="mt-4 font-sans text-[10px] text-stone-dim">
-        Formulation follows the Chemworld Fragrance Factory template — fragrance oil plus
-        perfumer's alcohol or Easyblend, totaling the bottle volume.
+        Every formula is hand-mixed to order — fragrance oil blended with perfumer's alcohol
+        or an oil base, filling your chosen bottle volume.
       </p>
     </div>
   );
