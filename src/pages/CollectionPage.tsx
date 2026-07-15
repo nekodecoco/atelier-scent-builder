@@ -54,7 +54,7 @@ export function CollectionPage() {
         </nav>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 md:grid-cols-3 lg:gap-x-6">
+      <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 lg:grid-cols-4 lg:gap-x-6">
         {!loaded
           ? Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)
           : visible.map((scent, i) => (
