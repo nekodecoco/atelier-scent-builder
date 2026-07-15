@@ -23,6 +23,19 @@ export function ScentTwinCard() {
           </span>
         ))}
       </p>
+
+      {ingredient.localTwins?.length ? (
+        <p className="mt-2 font-sans text-xs leading-relaxed text-stone">
+          Locally, reach for{' '}
+          {ingredient.localTwins.map((twin, i) => (
+            <span key={twin.fragrance}>
+              <em className="font-display text-sm text-neutral-800 dark:text-cream">{twin.fragrance}</em>
+              <span className="text-stone-dim"> by {twin.house}</span>
+              {i < ingredient.localTwins!.length - 1 ? ' and ' : '.'}
+            </span>
+          ))}
+        </p>
+      ) : null}
     </div>
   );
 }
