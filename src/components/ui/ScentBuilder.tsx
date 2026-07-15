@@ -17,6 +17,7 @@ import { NoteSlider } from './NoteSlider';
 import { RecipeCalculator } from './RecipeCalculator';
 import { Reveal } from './Reveal';
 import { ScentConcierge } from './ScentConcierge';
+import { ScentDescription } from './ScentDescription';
 import { ScentProfileCard } from './ScentProfileCard';
 import { ScentTwinCard } from './ScentTwinCard';
 
@@ -147,6 +148,8 @@ export function ScentBuilder() {
             <Droplets size={14} aria-hidden />
             {blended ? 'BLENDED — ADJUST ANYTHING TO SEPARATE' : 'BLEND MY SCENT'}
           </button>
+
+          <ScentDescription />
 
           <button
             type="button"
