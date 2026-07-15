@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getIngredient } from '../../data/ingredients';
 import type { PremadeScent } from '../../data/premadeScents';
 import { formatPeso, premadePriceFor } from '../../lib/pricing';
 import { BOTTLE_SIZES, DEFAULT_CONCENTRATION, type BottleSize } from '../../lib/recipe';
@@ -20,6 +21,12 @@ export function ProductCard({ scent, tag }: { scent: PremadeScent; tag?: string 
   const navigate = useNavigate();
 
   const price = premadePriceFor(scent.id, size);
+
+  const notes = [
+    { label: 'TOP', name: getIngredient('top', scent.formula.selected.top).name },
+    { label: 'HEART', name: getIngredient('heart', scent.formula.selected.heart).name },
+    { label: 'BASE', name: getIngredient('base', scent.formula.selected.base).name },
+  ];
 
   const quickAdd = () =>
     addItem({
@@ -54,6 +61,14 @@ export function ProductCard({ scent, tag }: { scent: PremadeScent; tag?: string 
             />
           </div>
         )}
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-ink/50 opacity-0 backdrop-blur-[1px] transition-opacity duration-300 group-hover:opacity-100">
+          {notes.map(({ label, name }) => (
+            <div key={label} className="text-center">
+              <p className="font-sans text-[8px] font-medium tracking-[0.22em] text-paper/60">{label}</p>
+              <p className="font-display text-sm italic text-paper">{name}</p>
+            </div>
+          ))}
+        </div>
       </ScentWash>
 
       <div className="flex flex-1 flex-col items-center px-2 pb-5 pt-4 text-center">
