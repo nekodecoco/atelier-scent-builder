@@ -50,12 +50,13 @@ Admin data fetched from Supabase is pushed into module-level singletons so pure 
 Conventions the whole catalog layer relies on:
 - **No row = default**: missing stock row means "in stock", missing availability row means "available", missing price row means "use builder pricing".
 - **Schema tolerance**: migrations shipped incrementally, so code falls back when a column/table doesn't exist yet (e.g. `fetchStock` retries without the `hidden` column).
+- **Images in Storage**: admin-uploaded perfume/hero photos go to the public `product-images` bucket via `uploadImage()` (`src/lib/catalog.ts`); their public URLs are saved in the `premade_images`/`hero_images` tables and shown over the generative visuals (cards, `HeroSlider`, `ScentWash`). Admin UI: `ImageUploadField` (shared), used by `PerfumeEditor` and `HeroEditor`.
 
 The schema lives only as SQL blocks in `SUPABASE_SETUP.md` — there are no migration files. When adding a table: enable RLS, use the established "public read / admin write via `public.admins` exists-check" policy pattern, and document the SQL in `SUPABASE_SETUP.md`.
 
 ### 3D bottle (`src/components/three/`)
 
-React Three Fiber renders a procedural glass bottle. `LiquidLayers` pours three liquid layers sized by the live percentages (merging into one color when "blended"); `BottleLabel` prints the custom name in real time.
+React Three Fiber renders a procedural glass bottle. `LiquidLayers` pours three liquid layers sized by the live percentages (merging into one color when "blended"); `BottleLabel` prints the custom name in real time. `Scene` drives the builder; `BottleShowcase` reuses the same `Bottle` on the landing (lazy-mounted on scroll, drag-to-spin, zoom disabled so the page still scrolls).
 
 ### AI Scent Concierge
 
@@ -67,7 +68,7 @@ The app is transitioning to an "Abel-style" light editorial look. All theme toke
 
 - **Primary editorial tokens** (`paper`, `ink`, `line`, `muted`, …) — the current light identity. Use these for new/redesigned components.
 - **Legacy tokens** (`ivory`, `gold`, `stone`, `night-*`, …) — kept so pre-redesign files compile untouched. The light ones (`ivory` → `paper`, etc.) are **remapped to the editorial palette** so old components restyle for free; the `night-*` dark tokens are **inert** (the `dark` class is never applied) and exist only to keep unconverted files building. Don't build new UI on these.
-- **"Radical Luxury" landing palette** (`bone`, `graphite`, `lime`, …) — a distinct scheme used only by the landing page, sourced from `assets/DESIGN.md` (a full Material-style token + type spec). `LandingPage.tsx` / `HeroSlider.tsx` / `LandingProductCard.tsx` use these; the rest of the app does not.
+- **"Radical Luxury" palette** (`bone`, `graphite`, `lime`, …) — a distinct scheme sourced from `assets/DESIGN.md` (a full Material-style token + type spec), used by the header/footer (`App.tsx`, `Header.tsx`) and the landing (`LandingPage.tsx`, `HeroSlider.tsx`, `LandingProductCard.tsx`); the rest of the app does not.
 
 Fonts are loaded in `index.html` and mapped to families in the config (`display`/`caslon` serifs for headings, `grotesk`/`hanken`/`sans` for body, `jetbrains` mono). When restyling a page, match the palette already in use on that page rather than mixing groups.
 
