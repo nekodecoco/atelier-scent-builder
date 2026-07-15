@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getIngredient } from '../../data/ingredients';
 import type { PremadeScent } from '../../data/premadeScents';
+import { normalizeSelected } from '../../lib/selection';
 import { formatPeso, premadePriceFor } from '../../lib/pricing';
 import { BOTTLE_SIZES, DEFAULT_CONCENTRATION, type BottleSize } from '../../lib/recipe';
 import { useCartStore } from '../../store/useCartStore';
@@ -22,10 +23,13 @@ export function ProductCard({ scent, tag }: { scent: PremadeScent; tag?: string 
 
   const price = premadePriceFor(scent.id, size);
 
+  const sel = normalizeSelected(scent.formula.selected);
+  const noteNames = (note: 'top' | 'heart' | 'base') =>
+    sel[note].map((id) => getIngredient(note, id).name).join(' + ');
   const notes = [
-    { label: 'TOP', name: getIngredient('top', scent.formula.selected.top).name },
-    { label: 'HEART', name: getIngredient('heart', scent.formula.selected.heart).name },
-    { label: 'BASE', name: getIngredient('base', scent.formula.selected.base).name },
+    { label: 'TOP', name: noteNames('top') },
+    { label: 'HEART', name: noteNames('heart') },
+    { label: 'BASE', name: noteNames('base') },
   ];
 
   const quickAdd = () =>

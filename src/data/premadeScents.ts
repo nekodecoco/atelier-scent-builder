@@ -2,7 +2,8 @@ import type { NoteKey } from './ingredients';
 import type { Percentages } from '../lib/blend';
 
 export interface ScentFormula {
-  selected: Record<NoteKey, string>;
+  /** Ingredient ids per note — 1..MAX_PER_NOTE, mixed in equal parts */
+  selected: Record<NoteKey, string[]>;
   percentages: Percentages;
 }
 
@@ -22,7 +23,7 @@ export const PREMADE_SCENTS: PremadeScent[] = [
     description:
       'Our master blend — sparkling bergamot over a velvet heart of May rose, settling into milky sandalwood.',
     formula: {
-      selected: { top: 'bergamot', heart: 'rose-de-mai', base: 'sandalwood' },
+      selected: { top: ['bergamot'], heart: ['rose-de-mai'], base: ['sandalwood'] },
       percentages: { top: 30, heart: 50, base: 20 },
     },
   },
@@ -33,7 +34,7 @@ export const PREMADE_SCENTS: PremadeScent[] = [
     description:
       'Rose and agarwood in near-equal measure, struck with a flint of pink pepper. For evenings that mean it.',
     formula: {
-      selected: { top: 'pink-pepper', heart: 'rose-de-mai', base: 'oud' },
+      selected: { top: ['pink-pepper'], heart: ['rose-de-mai'], base: ['oud'] },
       percentages: { top: 20, heart: 40, base: 40 },
     },
   },
@@ -44,7 +45,7 @@ export const PREMADE_SCENTS: PremadeScent[] = [
     description:
       'Luminous neroli opening onto creamy tuberose, grounded by the quiet intimacy of white musk.',
     formula: {
-      selected: { top: 'neroli', heart: 'tuberose', base: 'white-musk' },
+      selected: { top: ['neroli'], heart: ['tuberose'], base: ['white-musk'] },
       percentages: { top: 35, heart: 45, base: 20 },
     },
   },
@@ -55,7 +56,7 @@ export const PREMADE_SCENTS: PremadeScent[] = [
     description:
       'Sicilian lemon cut through narcotic jasmine, melting into dark bourbon vanilla. Sunlight you can wear.',
     formula: {
-      selected: { top: 'sicilian-lemon', heart: 'jasmine-sambac', base: 'vanilla-bourbon' },
+      selected: { top: ['sicilian-lemon'], heart: ['jasmine-sambac'], base: ['vanilla-bourbon'] },
       percentages: { top: 25, heart: 45, base: 30 },
     },
   },
@@ -66,7 +67,7 @@ export const PREMADE_SCENTS: PremadeScent[] = [
     description:
       'Electric yuzu dissolving into suede-like orris, resting on smooth sandalwood. Quietly aristocratic.',
     formula: {
-      selected: { top: 'yuzu', heart: 'iris', base: 'sandalwood' },
+      selected: { top: ['yuzu'], heart: ['iris'], base: ['sandalwood'] },
       percentages: { top: 30, heart: 45, base: 25 },
     },
   },
@@ -77,7 +78,7 @@ export const PREMADE_SCENTS: PremadeScent[] = [
     description:
       'Herbal lavender and rosy spice over a deep resinous amber that lasts from dusk until morning.',
     formula: {
-      selected: { top: 'pink-pepper', heart: 'lavender', base: 'amber' },
+      selected: { top: ['pink-pepper'], heart: ['lavender'], base: ['amber'] },
       percentages: { top: 25, heart: 35, base: 40 },
     },
   },

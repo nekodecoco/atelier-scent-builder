@@ -4,8 +4,8 @@ import { useScentStore } from '../../store/useScentStore';
 
 export function ScentTwinCard() {
   const activeNote = useScentStore((s) => s.activeNote);
-  const selectedId = useScentStore((s) => s.selected[activeNote]);
-  const ingredient = getIngredient(activeNote, selectedId);
+  const selectedIds = useScentStore((s) => s.selected[activeNote]);
+  const ingredient = getIngredient(activeNote, selectedIds[0]);
 
   return (
     <div className="rounded-lg border border-ivory-line bg-white/60 p-4 dark:border-night-line dark:bg-night-card">

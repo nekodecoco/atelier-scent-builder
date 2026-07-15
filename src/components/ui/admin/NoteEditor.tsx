@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { NOTE_KEYS, NOTE_LABELS, type NoteKey } from '../../../data/ingredients';
 import { deleteCustomIngredient, upsertCustomIngredient } from '../../../lib/catalog';
+import { normalizeSelected } from '../../../lib/selection';
 import { useCatalogStore } from '../../../store/useCatalogStore';
 
 interface FormState {
@@ -86,9 +87,10 @@ export function NoteEditor() {
   };
 
   const remove = async (id: string, name: string) => {
-    const usedBy = customPremades.find((p) =>
-      NOTE_KEYS.some((note) => p.formula.selected[note] === id),
-    );
+    const usedBy = customPremades.find((p) => {
+      const selected = normalizeSelected(p.formula.selected);
+      return NOTE_KEYS.some((note) => selected[note].includes(id));
+    });
     if (usedBy) {
       setError(`Can't delete ${name} — it's used by your perfume "${usedBy.name}". Edit or delete that perfume first.`);
       setConfirmingDelete(null);

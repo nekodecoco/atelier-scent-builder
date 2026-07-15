@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { INGREDIENTS, type NoteKey } from '../data/ingredients';
 import { MASTER_BLEND, rebalance, type Locks, type Percentages } from '../lib/blend';
+import { normalizeSelected, toggleInNote, type Selected } from '../lib/selection';
 import {
   DEFAULT_CONCENTRATION,
   MAX_CONCENTRATION,
@@ -12,8 +13,8 @@ import {
 interface ScentState {
   percentages: Percentages;
   locks: Locks;
-  /** Selected ingredient id per note layer */
-  selected: Record<NoteKey, string>;
+  /** Selected ingredient ids per note layer — 1..MAX_PER_NOTE, mixed equally */
+  selected: Selected;
   /** Note panel the user touched last — drives the Scent Twin card */
   activeNote: NoteKey;
   customName: string;
@@ -26,9 +27,12 @@ interface ScentState {
 
   setPercentage: (note: NoteKey, value: number) => void;
   toggleBlended: () => void;
-  loadFormula: (formula: { selected: Record<NoteKey, string>; percentages: Percentages }, name?: string) => void;
+  loadFormula: (formula: { selected: unknown; percentages: Percentages }, name?: string) => void;
   toggleLock: (note: NoteKey) => void;
-  selectIngredient: (note: NoteKey, id: string) => void;
+  /** Add the id to the note (up to the cap) or remove it, never below one */
+  toggleIngredient: (note: NoteKey, id: string) => void;
+  /** Replace a note's whole selection (used when pruning unavailable ingredients) */
+  setNoteIngredients: (note: NoteKey, ids: string[]) => void;
   setActiveNote: (note: NoteKey) => void;
   setCustomName: (name: string) => void;
   setBottleSize: (size: BottleSize) => void;
@@ -43,9 +47,9 @@ export const useScentStore = create<ScentState>((set) => ({
   percentages: { ...MASTER_BLEND },
   locks: { top: false, heart: false, base: false },
   selected: {
-    top: INGREDIENTS.top[0].id,
-    heart: INGREDIENTS.heart[0].id,
-    base: INGREDIENTS.base[0].id,
+    top: [INGREDIENTS.top[0].id],
+    heart: [INGREDIENTS.heart[0].id],
+    base: [INGREDIENTS.base[0].id],
   },
   activeNote: 'heart',
   customName: 'Golden Hour',
@@ -65,7 +69,7 @@ export const useScentStore = create<ScentState>((set) => ({
 
   loadFormula: (formula, name) =>
     set((s) => ({
-      selected: { ...formula.selected },
+      selected: normalizeSelected(formula.selected),
       percentages: { ...formula.percentages },
       locks: { top: false, heart: false, base: false },
       customName: (name ?? s.customName).slice(0, MAX_NAME_LENGTH),
@@ -75,8 +79,15 @@ export const useScentStore = create<ScentState>((set) => ({
   toggleLock: (note) =>
     set((s) => ({ locks: { ...s.locks, [note]: !s.locks[note] } })),
 
-  selectIngredient: (note, id) =>
-    set((s) => ({ selected: { ...s.selected, [note]: id }, activeNote: note, blended: false })),
+  toggleIngredient: (note, id) =>
+    set((s) => ({
+      selected: { ...s.selected, [note]: toggleInNote(s.selected[note], id) },
+      activeNote: note,
+      blended: false,
+    })),
+
+  setNoteIngredients: (note, ids) =>
+    set((s) => (ids.length ? { selected: { ...s.selected, [note]: ids } } : s)),
 
   setActiveNote: (note) => set({ activeNote: note }),
 

@@ -2,8 +2,8 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { easing } from 'maath';
 import type { Group, Mesh, MeshPhysicalMaterial } from 'three';
-import { getIngredient, type NoteKey } from '../../data/ingredients';
-import { mixFormulaColor } from '../../lib/color';
+import { type NoteKey } from '../../data/ingredients';
+import { mixFormulaColor, noteColor } from '../../lib/color';
 import { useScentStore } from '../../store/useScentStore';
 import { BODY } from './bottleDimensions';
 
@@ -59,7 +59,7 @@ export function LiquidLayers() {
       y += h;
 
       const material = mesh.material as MeshPhysicalMaterial;
-      const target = mixed ?? getIngredient(note, selected[note]).color;
+      const target = mixed ?? noteColor(note, selected[note]);
       easing.dampC(material.color, target, blended ? 0.45 : 0.3, delta);
     }
 
@@ -104,7 +104,7 @@ export function LiquidLayers() {
         >
           <boxGeometry args={[LIQUID_WIDTH, 1, LIQUID_DEPTH]} />
           <meshPhysicalMaterial
-            color={getIngredient(note, useScentStore.getState().selected[note]).color}
+            color={noteColor(note, useScentStore.getState().selected[note])}
             roughness={0.18}
             metalness={0}
             transparent

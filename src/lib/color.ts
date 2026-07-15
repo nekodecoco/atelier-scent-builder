@@ -1,5 +1,6 @@
-import { getIngredient, NOTE_KEYS, type NoteKey } from '../data/ingredients';
+import { getIngredient, type NoteKey } from '../data/ingredients';
 import type { Percentages } from './blend';
+import { type Selected, weightedIngredients } from './selection';
 
 function hexToHsl(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1), 16);
@@ -42,22 +43,20 @@ export function inkFor(hex: string): string {
 }
 
 /**
- * The single color the finished perfume settles into: the percentage-weighted
- * mix of the three ingredient colors, blended in gamma-corrected space so
- * mid-tones don't go muddy.
+ * Blend hex colors in gamma-corrected space so mid-tones don't go muddy.
+ * Weights need not sum to 1 — they are normalized to their own total.
  */
-export function mixFormulaColor(
-  selected: Record<NoteKey, string>,
-  percentages: Percentages,
-): string {
+export function mixHexColors(hexes: string[], weights?: number[]): string {
+  if (hexes.length === 0) return '#000000';
+  const w = weights ?? hexes.map(() => 1);
+  const total = w.reduce((sum, x) => sum + x, 0) || 1;
   const channels = [0, 0, 0];
-  for (const note of NOTE_KEYS) {
-    const hex = getIngredient(note, selected[note]).color;
-    const weight = percentages[note] / 100;
+  hexes.forEach((hex, idx) => {
+    const share = w[idx] / total;
     const n = parseInt(hex.slice(1), 16);
     const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-    for (let i = 0; i < 3; i++) channels[i] += weight * Math.pow(rgb[i] / 255, 2.2);
-  }
+    for (let i = 0; i < 3; i++) channels[i] += share * Math.pow(rgb[i] / 255, 2.2);
+  });
   return `#${channels
     .map((c) =>
       Math.round(Math.pow(Math.min(c, 1), 1 / 2.2) * 255)
@@ -65,4 +64,22 @@ export function mixFormulaColor(
         .padStart(2, '0'),
     )
     .join('')}`;
+}
+
+/** The blended color for one note's ingredients, mixed in equal parts. */
+export function noteColor(note: NoteKey, ids: string[]): string {
+  const hexes = (ids.length ? ids : ['']).map((id) => getIngredient(note, id).color);
+  return mixHexColors(hexes);
+}
+
+/**
+ * The single color the finished perfume settles into: the weighted mix of every
+ * ingredient across all notes (note% split equally within each note).
+ */
+export function mixFormulaColor(selected: Selected, percentages: Percentages): string {
+  const parts = weightedIngredients(selected, percentages);
+  return mixHexColors(
+    parts.map((p) => getIngredient(p.note, p.id).color),
+    parts.map((p) => p.weight),
+  );
 }
