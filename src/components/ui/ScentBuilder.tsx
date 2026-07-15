@@ -83,7 +83,7 @@ export function ScentBuilder() {
       </p>
 
       <div className="mt-12 grid gap-8 lg:grid-cols-[5fr_6fr]">
-        <div className="relative h-[420px] overflow-hidden rounded-lg border border-ivory-line dark:border-night-line sm:h-[520px] lg:h-auto lg:min-h-[560px]">
+        <div className="relative h-[420px] overflow-hidden rounded-lg border border-ivory-line dark:border-night-line sm:h-[520px] lg:sticky lg:top-20 lg:h-[600px] lg:self-start">
           <Scene />
           <span className="pointer-events-none absolute left-4 top-4 font-sans text-[10px] tracking-luxe text-stone-dim">
             DRAG TO ROTATE
