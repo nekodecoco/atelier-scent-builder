@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { PREMADE_SCENTS } from '../../data/premadeScents';
 import { MASTER_BLEND } from '../../lib/blend';
 import { formatPeso, premadePriceFor } from '../../lib/pricing';
@@ -269,16 +269,6 @@ export function HeroSlider() {
         >
           <ChevronRight size={16} aria-hidden />
         </button>
-      </div>
-
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 ${
-          darkAtBottom ? 'text-white/70' : 'text-black/60'
-        }`}
-      >
-        <span className="font-jetbrains text-[9px] tracking-[0.2em]">SCROLL</span>
-        <ChevronDown size={16} className="motion-safe:animate-bounce" aria-hidden />
       </div>
     </section>
   );
