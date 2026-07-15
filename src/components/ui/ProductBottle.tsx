@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import type { ScentFormula } from '../../data/premadeScents';
 import { mixFormulaColor } from '../../lib/color';
+import { normalizeSelected } from '../../lib/selection';
 
 /**
  * Editorial product shot: a tall cream-glass bottle with the blend's single
@@ -16,7 +17,7 @@ export function ProductBottle({
   className?: string;
 }) {
   const clipId = useId();
-  const liquid = mixFormulaColor(formula.selected, formula.percentages);
+  const liquid = mixFormulaColor(normalizeSelected(formula.selected), formula.percentages);
 
   return (
     <svg viewBox="0 0 90 150" className={className} role="img" aria-label={`${name} bottle`}>

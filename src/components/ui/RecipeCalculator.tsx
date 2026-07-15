@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { FlaskConical } from 'lucide-react';
 import { getIngredient, NOTE_LABELS } from '../../data/ingredients';
-import { inkFor } from '../../lib/color';
+import { inkFor, noteColor } from '../../lib/color';
 import { formatPeso, priceFor } from '../../lib/pricing';
 import {
   BOTTLE_SIZES,
@@ -105,7 +105,8 @@ export function RecipeCalculator() {
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {recipe.notes.map(({ note, ml, drops }) => {
-          const ingredient = getIngredient(note, selected[note]);
+          const ids = selected[note];
+          const count = ids.length;
           return (
             <div
               key={note}
@@ -114,11 +115,29 @@ export function RecipeCalculator() {
               <div className="font-sans text-[9px] uppercase tracking-luxe text-stone-dim">
                 {NOTE_LABELS[note]} · {percentages[note]}%
               </div>
-              <div className="mt-1 truncate font-sans text-[11px] text-stone">{ingredient.name}</div>
-              <div className="mt-1.5 font-display text-2xl" style={{ color: inkFor(ingredient.color) }}>
+              <div className="mt-1.5 font-display text-2xl" style={{ color: inkFor(noteColor(note, ids)) }}>
                 {ml} mL
               </div>
-              <div className="font-sans text-[10px] text-stone-dim">≈ {drops} drops</div>
+              <div className="font-sans text-[10px] text-stone-dim">
+                ≈ {drops} drops{count > 1 ? ` · split ${count} ways` : ''}
+              </div>
+              <div className="mt-2 space-y-0.5">
+                {ids.map((id) => {
+                  const ingredient = getIngredient(note, id);
+                  const partMl = Math.round((ml / count) * 10) / 10;
+                  const partDrops = Math.round(drops / count);
+                  return (
+                    <div key={id} className="flex items-baseline justify-between gap-2">
+                      <span className="truncate font-sans text-[11px] text-stone">{ingredient.name}</span>
+                      {count > 1 && (
+                        <span className="whitespace-nowrap font-sans text-[9px] text-stone-dim">
+                          {partMl} mL · ~{partDrops} dr
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}

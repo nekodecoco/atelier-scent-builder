@@ -1,17 +1,20 @@
 import { useId } from 'react';
-import { getIngredient, type NoteKey } from '../../data/ingredients';
+import { type NoteKey } from '../../data/ingredients';
 import type { ScentFormula } from '../../data/premadeScents';
+import { noteColor } from '../../lib/color';
+import { normalizeSelected } from '../../lib/selection';
 
 const STACK: NoteKey[] = ['base', 'heart', 'top'];
 const LIQUID = { x: 22, width: 76, bottom: 148, height: 100 };
 
 export function BottlePreview({ formula, name }: { formula: ScentFormula; name: string }) {
   const clipId = useId();
+  const selected = normalizeSelected(formula.selected);
   let cursor = LIQUID.bottom;
   const layers = STACK.map((note) => {
     const h = (formula.percentages[note] / 100) * LIQUID.height;
     cursor -= h;
-    return { note, y: cursor, h, color: getIngredient(note, formula.selected[note]).color };
+    return { note, y: cursor, h, color: noteColor(note, selected[note]) };
   });
 
   return (

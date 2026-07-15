@@ -13,6 +13,7 @@ import {
 } from '../../../lib/catalog';
 import { priceFor } from '../../../lib/pricing';
 import type { BottleSize } from '../../../lib/recipe';
+import { MAX_PER_NOTE, normalizeSelected, toggleInNote } from '../../../lib/selection';
 import { useCatalogStore } from '../../../store/useCatalogStore';
 import { BottlePreview } from '../BottlePreview';
 import { ImageUploadField } from './ImageUploadField';
@@ -22,7 +23,7 @@ interface FormState {
   name: string;
   tagline: string;
   description: string;
-  selected: Record<NoteKey, string>;
+  selected: Record<NoteKey, string[]>;
   percentages: Percentages;
 }
 
@@ -31,9 +32,9 @@ const EMPTY: FormState = {
   tagline: '',
   description: '',
   selected: {
-    top: INGREDIENTS.top[0].id,
-    heart: INGREDIENTS.heart[0].id,
-    base: INGREDIENTS.base[0].id,
+    top: [INGREDIENTS.top[0].id],
+    heart: [INGREDIENTS.heart[0].id],
+    base: [INGREDIENTS.base[0].id],
   },
   percentages: { top: 30, heart: 50, base: 20 },
 };
@@ -154,7 +155,7 @@ export function PerfumeEditor() {
 
   const optionsFor = (note: NoteKey) =>
     [...INGREDIENTS[note], ...customIngredients[note]].filter(
-      (i) => availability[i.id] !== false || i.id === form.selected[note],
+      (i) => availability[i.id] !== false || form.selected[note].includes(i.id),
     );
 
   const save = async () => {
@@ -166,7 +167,7 @@ export function PerfumeEditor() {
       name: form.name.trim(),
       tagline: form.tagline.trim(),
       description: form.description.trim(),
-      formula: { selected: { ...form.selected }, percentages: { ...form.percentages } },
+      formula: { selected: normalizeSelected(form.selected), percentages: { ...form.percentages } },
     });
     setBusy(false);
     if (err) {
@@ -185,7 +186,7 @@ export function PerfumeEditor() {
       name: scent.name,
       tagline: scent.tagline,
       description: scent.description,
-      selected: { ...scent.formula.selected },
+      selected: normalizeSelected(scent.formula.selected),
       percentages: { ...scent.formula.percentages },
     });
     setError(null);
@@ -254,36 +255,61 @@ export function PerfumeEditor() {
           </label>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {NOTE_KEYS.map((note) => (
-              <div key={note}>
-                <span className={labelClass}>{NOTE_LABELS[note]}</span>
-                <select
-                  value={form.selected[note]}
-                  onChange={(e) => patch({ selected: { ...form.selected, [note]: e.target.value } })}
-                  aria-label={`${NOTE_LABELS[note]} ingredient`}
-                  className={`mt-1.5 ${inputClass}`}
-                >
-                  {optionsFor(note).map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.name}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={form.percentages[note]}
-                  onChange={(e) =>
-                    patch({
-                      percentages: { ...form.percentages, [note]: Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))) },
-                    })
-                  }
-                  aria-label={`${NOTE_LABELS[note]} percentage`}
-                  className={`mt-2 ${inputClass} text-center`}
-                />
-              </div>
-            ))}
+            {NOTE_KEYS.map((note) => {
+              const ids = form.selected[note];
+              const atCap = ids.length >= MAX_PER_NOTE;
+              return (
+                <div key={note}>
+                  <span className={labelClass}>
+                    {NOTE_LABELS[note]}
+                    {ids.length > 1 && <span className="text-stone-dim"> · {ids.length} mixed</span>}
+                  </span>
+                  <div
+                    className="mt-1.5 flex flex-wrap gap-1.5"
+                    role="group"
+                    aria-label={`${NOTE_LABELS[note]} ingredients`}
+                  >
+                    {optionsFor(note).map((i) => {
+                      const on = ids.includes(i.id);
+                      const disabled = atCap && !on;
+                      return (
+                        <button
+                          key={i.id}
+                          type="button"
+                          aria-pressed={on}
+                          disabled={disabled}
+                          title={disabled ? `Up to ${MAX_PER_NOTE} per note` : i.name}
+                          onClick={() => patch({ selected: { ...form.selected, [note]: toggleInNote(ids, i.id) } })}
+                          className={`rounded-full border px-2.5 py-1 font-sans text-[10px] transition-all ${
+                            disabled
+                              ? 'cursor-not-allowed border-ivory-line text-stone-dim opacity-40 dark:border-night-line'
+                              : on
+                                ? 'border-transparent font-medium text-night'
+                                : 'border-ivory-line text-stone hover:border-stone dark:border-night-line dark:hover:border-stone-dim'
+                          }`}
+                          style={on ? { backgroundColor: i.color } : undefined}
+                        >
+                          {i.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={form.percentages[note]}
+                    onChange={(e) =>
+                      patch({
+                        percentages: { ...form.percentages, [note]: Math.max(0, Math.min(100, Math.round(Number(e.target.value) || 0))) },
+                      })
+                    }
+                    aria-label={`${NOTE_LABELS[note]} percentage`}
+                    className={`mt-2 ${inputClass} text-center`}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">

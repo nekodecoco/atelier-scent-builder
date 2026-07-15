@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { getIngredient } from '../../data/ingredients';
 import type { ScentFormula } from '../../data/premadeScents';
+import { noteColor } from '../../lib/color';
+import { normalizeSelected } from '../../lib/selection';
 
 /**
  * Full-bleed backdrop for product imagery: an admin photo when provided,
@@ -17,9 +18,10 @@ export function ScentWash({
   className?: string;
   children?: ReactNode;
 }) {
-  const top = getIngredient('top', formula.selected.top).color;
-  const heart = getIngredient('heart', formula.selected.heart).color;
-  const base = getIngredient('base', formula.selected.base).color;
+  const selected = normalizeSelected(formula.selected);
+  const top = noteColor('top', selected.top);
+  const heart = noteColor('heart', selected.heart);
+  const base = noteColor('base', selected.base);
 
   return (
     <div className={`relative overflow-hidden ${className}`}>

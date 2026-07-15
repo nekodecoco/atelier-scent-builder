@@ -1,5 +1,6 @@
-import { getCustomIngredients, INGREDIENTS, NOTE_KEYS, type NoteKey } from '../data/ingredients';
+import { getCustomIngredients, INGREDIENTS, type NoteKey } from '../data/ingredients';
 import type { Percentages } from './blend';
+import { type Selected, weightedIngredients } from './selection';
 
 export const TRAIT_AXES = ['fresh', 'floral', 'woody', 'sweet', 'spicy', 'warm'] as const;
 export type TraitAxis = (typeof TRAIT_AXES)[number];
@@ -67,14 +68,10 @@ export interface ScentProfile {
   character: string;
 }
 
-export function computeProfile(
-  selected: Record<NoteKey, string>,
-  percentages: Percentages,
-): ScentProfile {
+export function computeProfile(selected: Selected, percentages: Percentages): ScentProfile {
   const values = vec(0, 0, 0, 0, 0, 0);
-  for (const note of NOTE_KEYS) {
-    const traits = traitsFor(note, selected[note]);
-    const weight = percentages[note] / 100;
+  for (const { note, id, weight } of weightedIngredients(selected, percentages)) {
+    const traits = traitsFor(note, id);
     for (const axis of TRAIT_AXES) values[axis] += traits[axis] * weight;
   }
 

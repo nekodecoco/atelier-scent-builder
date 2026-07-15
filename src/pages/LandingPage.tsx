@@ -10,7 +10,7 @@ import { MASTER_BLEND } from '../lib/blend';
 import { useCatalogStore } from '../store/useCatalogStore';
 
 const HOUSE_FORMULA = {
-  selected: { top: 'yuzu', heart: 'iris', base: 'white-musk' },
+  selected: { top: ['yuzu'], heart: ['iris'], base: ['white-musk'] },
   percentages: { ...MASTER_BLEND },
 };
 

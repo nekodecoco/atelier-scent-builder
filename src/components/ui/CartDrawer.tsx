@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Loader2, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
 import { NOTE_KEYS } from '../../data/ingredients';
-import { getIngredient } from '../../data/ingredients';
+import { noteColor } from '../../lib/color';
+import { normalizeSelected } from '../../lib/selection';
 import { placeOrder } from '../../lib/orders';
 import { formatPeso } from '../../lib/pricing';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -11,13 +12,14 @@ import { cartSubtotal, useCartStore, type CartItem } from '../../store/useCartSt
 import { SupabaseSetupNotice } from './SupabaseSetupNotice';
 
 function FormulaDots({ item }: { item: CartItem }) {
+  const selected = normalizeSelected(item.formula.selected);
   return (
     <span className="flex gap-1" aria-hidden>
       {NOTE_KEYS.map((note) => (
         <span
           key={note}
           className="h-2.5 w-2.5 rounded-full"
-          style={{ backgroundColor: getIngredient(note, item.formula.selected[note]).color }}
+          style={{ backgroundColor: noteColor(note, selected[note]) }}
         />
       ))}
     </span>

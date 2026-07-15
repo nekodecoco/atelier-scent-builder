@@ -2,18 +2,18 @@ import type { CSSProperties } from 'react';
 import { Lock, LockOpen } from 'lucide-react';
 import { getIngredient, NOTE_LABELS, type NoteKey } from '../../data/ingredients';
 import { isNoteFrozen } from '../../lib/blend';
-import { inkFor } from '../../lib/color';
+import { inkFor, noteColor } from '../../lib/color';
 import { useScentStore } from '../../store/useScentStore';
 
 export function NoteSlider({ note }: { note: NoteKey }) {
   const percentage = useScentStore((s) => s.percentages[note]);
   const locks = useScentStore((s) => s.locks);
-  const selectedId = useScentStore((s) => s.selected[note]);
+  const selectedIds = useScentStore((s) => s.selected[note]);
   const setPercentage = useScentStore((s) => s.setPercentage);
   const toggleLock = useScentStore((s) => s.toggleLock);
 
-  const ingredient = getIngredient(note, selectedId);
-  const ink = inkFor(ingredient.color);
+  const ingredientName = selectedIds.map((id) => getIngredient(note, id).name).join(' + ');
+  const ink = inkFor(noteColor(note, selectedIds));
   const locked = locks[note];
   const frozen = isNoteFrozen(locks, note);
 
@@ -21,7 +21,7 @@ export function NoteSlider({ note }: { note: NoteKey }) {
     <div>
       <div className="flex items-center justify-between gap-3">
         <span className="font-sans text-[10px] uppercase tracking-luxe text-stone">
-          {NOTE_LABELS[note]} · <span style={{ color: ink }}>{ingredient.name}</span>
+          {NOTE_LABELS[note]} · <span style={{ color: ink }}>{ingredientName}</span>
         </span>
         <div className="flex items-center gap-2.5">
           <span className="min-w-[3ch] text-right font-display text-lg text-neutral-900 dark:text-cream">

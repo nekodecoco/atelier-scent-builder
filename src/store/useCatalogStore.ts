@@ -92,16 +92,22 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       loaded: true,
     });
 
-    // if a selected ingredient is now unavailable or deleted, move the
-    // selection to the first selectable option in that layer
-    const { selected, selectIngredient } = useScentStore.getState();
+    // if any selected ingredient is now unavailable or deleted, drop it; if a
+    // note is left empty, fall back to the first selectable option in that layer
+    const { selected, setNoteIngredients } = useScentStore.getState();
     for (const note of NOTE_KEYS) {
       const merged = [...INGREDIENTS[note], ...getCustomIngredients(note)];
-      const current = merged.find((i) => i.id === selected[note]);
-      const selectable = (i: Ingredient) => availability[i.id] !== false;
-      if (!current || !selectable(current)) {
-        const fallback = merged.find(selectable);
-        if (fallback) selectIngredient(note, fallback.id);
+      const selectable = (id: string) => {
+        const ing = merged.find((i) => i.id === id);
+        return !!ing && availability[ing.id] !== false;
+      };
+      const kept = selected[note].filter(selectable);
+      if (kept.length === selected[note].length) continue;
+      if (kept.length > 0) {
+        setNoteIngredients(note, kept);
+      } else {
+        const fallback = merged.find((i) => availability[i.id] !== false);
+        if (fallback) setNoteIngredients(note, [fallback.id]);
       }
     }
   },

@@ -12,7 +12,7 @@ const SLIDE_COUNT = 3;
 const INTERVAL_MS = 6000;
 
 const HOUSE_FORMULA = {
-  selected: { top: 'bergamot', heart: 'rose-de-mai', base: 'sandalwood' },
+  selected: { top: ['bergamot'], heart: ['rose-de-mai'], base: ['sandalwood'] },
   percentages: { ...MASTER_BLEND },
 };
 
