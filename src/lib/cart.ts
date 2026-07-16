@@ -9,12 +9,20 @@ import { supabase } from './supabase';
  * returns `string | null` (an error message or null) instead of throwing.
  */
 
-export async function fetchServerCart(): Promise<CartItem[] | null> {
-  if (!supabase) return null;
+/**
+ * A read either succeeded (and `items` is the truth — an empty array genuinely
+ * means "this account has no cart") or it failed. Callers MUST distinguish the
+ * two: treating a failed read as an empty cart would overwrite a real cart with
+ * nothing.
+ */
+export type ServerCartResult = { ok: true; items: CartItem[] } | { ok: false };
+
+export async function fetchServerCart(): Promise<ServerCartResult> {
+  if (!supabase) return { ok: false };
 
   try {
     const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return null;
+    if (!userData.user) return { ok: false };
 
     const { data, error } = await supabase
       .from('carts')
@@ -22,11 +30,13 @@ export async function fetchServerCart(): Promise<CartItem[] | null> {
       .eq('user_id', userData.user.id)
       .maybeSingle();
 
-    if (error || !data) return null;
-    return (data.items ?? []) as CartItem[];
+    // table missing / RLS / network — unknown, not empty
+    if (error) return { ok: false };
+
+    // no row is a real answer: this account simply has no saved cart yet
+    return { ok: true, items: (data?.items ?? []) as CartItem[] };
   } catch {
-    // network failure / table missing — fall back to the local cart silently
-    return null;
+    return { ok: false };
   }
 }
 

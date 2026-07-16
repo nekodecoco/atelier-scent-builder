@@ -18,9 +18,18 @@ export interface CartItem {
   formula: ScentFormula;
 }
 
+/** Stamped on carts persisted before `ownerId` existed — see the store's migrate. */
+export const LEGACY_OWNER = 'legacy';
+
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  /**
+   * Which user this cart is already synced to. `null` means a guest cart (the
+   * only state that may be merged into an account at sign-in); any other value
+   * means the cart is a mirror of a server cart, not something to merge again.
+   */
+  ownerId: string | null;
   addItem: (item: Omit<CartItem, 'id' | 'qty'>) => void;
   /** Re-add a past order's lines, preserving quantities (used by Reorder) */
   addOrderItems: (items: CartItem[]) => void;
@@ -28,6 +37,7 @@ interface CartState {
   changeQty: (id: string, delta: number) => void;
   clear: () => void;
   setItems: (items: CartItem[]) => void;
+  setOwner: (ownerId: string | null) => void;
   openCart: () => void;
   closeCart: () => void;
 }
@@ -79,6 +89,7 @@ export const useCartStore = create<CartState>()(
     (set) => ({
       items: [],
       isOpen: false,
+      ownerId: null,
 
       addItem: (item) =>
         set((s) => {
@@ -111,12 +122,22 @@ export const useCartStore = create<CartState>()(
 
       clear: () => set({ items: [] }),
       setItems: (items) => set({ items }),
+      setOwner: (ownerId) => set({ ownerId }),
       openCart: () => set({ isOpen: true }),
       closeCart: () => set({ isOpen: false }),
     }),
     {
       name: 'atelier-cart',
-      partialize: (s) => ({ items: s.items }),
+      partialize: (s) => ({ items: s.items, ownerId: s.ownerId }),
+      version: 1,
+      // Carts persisted before `ownerId` existed are almost certainly already
+      // mirrors of a server cart. Stamping them LEGACY (rather than leaving
+      // null) stops the sync treating them as a guest cart and merging them
+      // into the account one last time, which would double every quantity.
+      migrate: (persisted) => ({
+        ...(persisted as { items: CartItem[] }),
+        ownerId: LEGACY_OWNER,
+      }),
     },
   ),
 );
