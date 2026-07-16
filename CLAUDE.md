@@ -52,7 +52,7 @@ Admin Supabase data is pushed into module-level singletons so pure functions res
 
 ### 3D bottle (`src/components/three/`)
 
-React Three Fiber renders a procedural glass bottle. `LiquidLayers` pours three layers sized by live percentages, each colored by `noteColor` (its note's ingredient blend), merging to one color when "blended"; `BottleLabel` prints the name live. `Scene` drives the builder; `BottleShowcase` reuses `Bottle` on the landing.
+React Three Fiber renders a procedural glass bottle. `LiquidLayers` pours three layers sized by live percentages, each colored by `noteColor` (its note's ingredient blend), merging to one color when "blended"; `BottleLabel` prints the name live. `Scene` drives the builder and is now the **only** WebGL entry point — the landing's 3D showcase was replaced by `NoteMarquee`, so no page but `/builder` creates a WebGL context. (three.js still lands in the main bundle, since `Scene` is imported eagerly.)
 
 ### AI Scent Concierge
 

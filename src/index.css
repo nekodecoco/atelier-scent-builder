@@ -38,6 +38,25 @@ html {
   transform: none;
 }
 
+/* infinite note-lane marquee (see NoteMarquee.tsx). The track holds two copies
+   of the list, so translating -50% lands exactly on the start of the second
+   copy — a seamless wrap. Direction/duration are set per lane inline. */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee linear infinite;
+  will-change: transform;
+}
+
+/* let readers stop a lane to actually read it */
+.marquee-lane:hover .marquee-track {
+  animation-play-state: paused;
+}
+
 /* light sweep across gold CTAs on hover */
 .shimmer {
   position: relative;
@@ -79,6 +98,12 @@ button:not(:disabled):active {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+  /* the blanket rule above would loop an infinite animation every 0.01ms
+     (flicker/CPU churn) rather than stop it — kill the marquee outright */
+  .marquee-track {
+    animation: none !important;
+    transform: none !important;
   }
 }
 
