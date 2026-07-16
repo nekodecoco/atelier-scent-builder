@@ -23,7 +23,11 @@ No tests, no linter. `api/curate.ts` is a Vercel function the Vite dev server do
 
 ## Architecture
 
-Vite + React 18 + TypeScript + Tailwind. Routes in `src/App.tsx`: `/`, `/builder`, `/collection`, `/account`, `/admin`. `vercel.json` rewrites everything to `index.html`.
+Vite + React 18 + TypeScript + Tailwind + Motion (`motion/react`). Routes in `src/App.tsx`: `/`, `/builder`, `/collection`, `/account`, `/admin`. `vercel.json` rewrites everything to `index.html`.
+
+### Route transitions
+
+`src/components/ui/RouteTransition.tsx` wraps `<Routes location={location}>` in `App.tsx` — the explicit `location` prop is **required** (it lets AnimatePresence keep rendering the outgoing page during its exit; without it the swap is instant). Choreography: exit scale/fade → translucent liquid wave sweeps bottom-to-top (clip-path glass panels) → new page springs up. It skips the initial page load, is `pointer-events-none` throughout, and degrades to a plain crossfade under `prefers-reduced-motion`. In-app navigation must use `<Link>`/`<NavLink>`/`navigate()` — plain `<a href>` causes a full reload and bypasses the transition. Tuning dials (blur, tint alphas, `SWEEP_SECONDS`) live at the top of the file; to screenshot mid-sweep, temporarily raise `SWEEP_SECONDS`, then revert.
 
 ### Domain model
 
