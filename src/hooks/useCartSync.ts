@@ -35,13 +35,26 @@ export function useCartSync() {
       let cancelled = false;
       syncedUserId.current = null;
       void (async () => {
-        const server = await fetchServerCart();
+        const result = await fetchServerCart();
         if (cancelled) return;
-        const { items: local, setItems } = useCartStore.getState();
-        const merged = server ? mergeCartItems(local, server) : local;
-        setItems(merged);
+
+        // Couldn't read the server cart: leave the local one exactly as it is
+        // and stay out of mirroring, so a transient failure can never overwrite
+        // a real server cart with an empty one.
+        if (!result.ok) return;
+
+        const { items: local, ownerId, setItems, setOwner } = useCartStore.getState();
+
+        // Merging is a ONE-TIME hand-off: only a guest cart (ownerId === null)
+        // gets folded into the account. Once the cart belongs to a user it is
+        // just a mirror of the server copy — merging again would sum the same
+        // quantities into themselves and double the cart on every load.
+        const next = ownerId === null ? mergeCartItems(result.items, local) : result.items;
+
+        setItems(next);
+        setOwner(userId);
         syncedUserId.current = userId;
-        await saveServerCart(merged);
+        await saveServerCart(next);
       })();
       return () => {
         cancelled = true;
@@ -50,7 +63,9 @@ export function useCartSync() {
 
     if (!userId && previous) {
       syncedUserId.current = null;
-      useCartStore.getState().clear();
+      const { clear, setOwner } = useCartStore.getState();
+      clear();
+      setOwner(null); // back to a guest cart, mergeable on the next sign-in
     }
   }, [userId]);
 
