@@ -71,7 +71,7 @@ export function AdminPage() {
 
         <Section
           title="Hero images"
-          hint="Full-bleed photos for the three landing-page hero slides. Each blank slot falls back to its generative visual. Recommended: wide, high-resolution shots (landscape)."
+          hint="Full-bleed photos for the three landing-page hero slides, plus the blurred background behind the signature section. Each blank slot falls back to its generative visual. Recommended: wide, high-resolution shots (landscape)."
         >
           <HeroEditor />
         </Section>
