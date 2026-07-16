@@ -45,6 +45,18 @@ create policy "insert own orders" on public.orders
 
 Row Level Security means every user can only ever see and create their own orders.
 
+> **Important — the order-history privacy boundary.** RLS on `orders` is the *only*
+> thing stopping one customer from reading another's orders. If it isn't enabled, every
+> signed-in customer sees all orders. Verify it in **SQL Editor**:
+>
+> ```sql
+> select relrowsecurity from pg_class where relname = 'orders';        -- must be true
+> select policyname, cmd from pg_policies where tablename = 'orders';  -- expect "read own orders" (select)
+> ```
+>
+> If `relrowsecurity` is `false` or the `read own orders` policy is missing, re-run the
+> `enable row level security` + `read own orders` / `insert own orders` block above.
+
 ## 4. Auth settings
 
 Email/password sign-in is enabled by default. For frictionless local testing, go to
@@ -58,6 +70,42 @@ then redeploy:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+
+## 6. Cross-device cart & saved blends
+
+These power the synced cart (a signed-in customer's cart follows them across devices)
+and saved favorite blends. Run in **SQL Editor**:
+
+```sql
+-- one cart per user, mirrored across devices (guests keep a localStorage cart)
+create table public.carts (
+  user_id uuid primary key references auth.users,
+  items jsonb not null default '[]',
+  updated_at timestamptz not null default now()
+);
+alter table public.carts enable row level security;
+create policy "own cart" on public.carts
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- a customer's saved builder formulas ("favorite blends")
+create table public.saved_blends (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users,
+  name text not null,
+  formula jsonb not null,
+  created_at timestamptz not null default now()
+);
+alter table public.saved_blends enable row level security;
+create policy "read own saved blends" on public.saved_blends
+  for select using (auth.uid() = user_id);
+create policy "insert own saved blends" on public.saved_blends
+  for insert with check (auth.uid() = user_id);
+create policy "delete own saved blends" on public.saved_blends
+  for delete using (auth.uid() = user_id);
+```
+
+Both tables degrade gracefully — without them (or without Supabase) the app falls back to
+the local cart and hides the saved-blends UI.
 
 ## Admin panel (stock, ingredients, orders)
 

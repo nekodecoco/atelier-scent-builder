@@ -94,6 +94,15 @@ export function CartDrawer() {
 
   const subtotal = cartSubtotal(items);
 
+  // Closing the drawer also clears the "Order received" screen, so reopening the
+  // cart later returns to the normal (now empty) cart instead of the stale
+  // confirmation. Used by the X button, the backdrop, and after checkout.
+  const handleClose = () => {
+    setPlacedId(null);
+    setError(null);
+    closeCart();
+  };
+
   const submitOrder = async () => {
     setPlacing(true);
     setError(null);
@@ -110,7 +119,7 @@ export function CartDrawer() {
   return (
     <div aria-hidden={!isOpen} className={isOpen ? '' : 'pointer-events-none'}>
       <div
-        onClick={closeCart}
+        onClick={handleClose}
         className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
@@ -126,7 +135,7 @@ export function CartDrawer() {
           <h2 className="font-display text-2xl text-neutral-900 dark:text-cream">Your cart</h2>
           <button
             type="button"
-            onClick={closeCart}
+            onClick={handleClose}
             aria-label="Close cart"
             className="rounded-full border border-ivory-line p-2 text-stone transition-colors hover:text-neutral-900 dark:border-night-line dark:hover:text-cream"
           >
@@ -149,8 +158,7 @@ export function CartDrawer() {
               <button
                 type="button"
                 onClick={() => {
-                  setPlacedId(null);
-                  closeCart();
+                  handleClose();
                   navigate('/account');
                 }}
                 className="mt-5 rounded border border-gold-deep px-5 py-2.5 font-sans text-[10px] tracking-luxe text-gold-deep hover:bg-gold-deep hover:text-ivory dark:border-gold dark:text-gold dark:hover:bg-gold dark:hover:text-night"

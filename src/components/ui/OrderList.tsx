@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Loader2, PackageOpen } from 'lucide-react';
+import { Loader2, PackageOpen, RotateCw } from 'lucide-react';
 import { fetchMyOrders, type OrderRecord } from '../../lib/orders';
 import { formatPeso } from '../../lib/pricing';
+import { useCartStore } from '../../store/useCartStore';
 
 const dateFormat = new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -16,6 +17,7 @@ const STATUS_STYLES: Record<string, string> = {
 export function OrderList() {
   const [orders, setOrders] = useState<OrderRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const addOrderItems = useCartStore((s) => s.addOrderItems);
 
   useEffect(() => {
     fetchMyOrders().then((result) => {
@@ -90,11 +92,21 @@ export function OrderList() {
             ))}
           </ul>
 
-          <div className="mt-3 flex items-baseline justify-between border-t border-ivory-line/70 pt-3 dark:border-night-line">
-            <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">Total</span>
-            <span className="font-display text-xl text-neutral-900 dark:text-cream">
-              {formatPeso(order.total)}
-            </span>
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-ivory-line/70 pt-3 dark:border-night-line">
+            <button
+              type="button"
+              onClick={() => addOrderItems(order.items)}
+              className="flex items-center gap-1.5 rounded border border-ivory-line px-3 py-1.5 font-sans text-[10px] tracking-luxe text-stone transition-colors hover:border-gold-deep hover:text-gold-deep dark:border-night-line dark:hover:border-gold dark:hover:text-gold"
+            >
+              <RotateCw size={11} aria-hidden />
+              REORDER
+            </button>
+            <div className="flex items-baseline gap-2">
+              <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">Total</span>
+              <span className="font-display text-xl text-neutral-900 dark:text-cream">
+                {formatPeso(order.total)}
+              </span>
+            </div>
           </div>
         </li>
       ))}
