@@ -25,9 +25,6 @@ export function Header() {
             <NavLink to="/builder" className={navClass}>
               SCENT BUILDER
             </NavLink>
-            <Link to="/builder" className="transition-colors hover:text-black">
-              CONCIERGE
-            </Link>
           </nav>
         </div>
 
