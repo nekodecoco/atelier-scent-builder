@@ -6,15 +6,20 @@ const SLOTS: { slot: string; label: string; hint: string }[] = [
   { slot: 'hero-1', label: 'Slide 1 · Brand', hint: 'The "Radical Perfumery" opener.' },
   { slot: 'hero-2', label: 'Slide 2 · Featured', hint: 'The featured-scent slide.' },
   { slot: 'hero-3', label: 'Slide 3 · Builder', hint: 'The "Composed by you" slide.' },
+  {
+    slot: 'signature-bg',
+    label: 'Signature background',
+    hint: 'Sits blurred behind "Your signature, distilled". Blank = plain black.',
+  },
 ];
 
-/** Upload the three full-bleed hero photos; blank slots fall back to generative visuals. */
+/** Upload the full-bleed landing photos; blank slots fall back to generative visuals. */
 export function HeroEditor() {
   const heroImages = useCatalogStore((s) => s.heroImages);
   const reload = useCatalogStore((s) => s.load);
 
   return (
-    <div className="grid gap-5 sm:grid-cols-3">
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {SLOTS.map(({ slot, label, hint }) => (
         <div
           key={slot}

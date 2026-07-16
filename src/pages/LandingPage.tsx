@@ -13,6 +13,8 @@ export function LandingPage() {
   const navigate = useNavigate();
   const hiddenPremades = useCatalogStore((s) => s.hiddenPremades);
   const customPremades = useCatalogStore((s) => s.customPremades);
+  // admin-uploaded photo behind the signature section; blank = plain black
+  const signatureBg = useCatalogStore((s) => s.heroImages['signature-bg']);
 
   // old deep links (/#builder) now live on their own page
   useEffect(() => {
@@ -59,8 +61,24 @@ export function LandingPage() {
 
       {/* Black stage: the full width becomes the asset — a long, slow slide of
           the note palette — rather than dead space around a centred object. */}
-      <section className="border-t border-white/10 bg-black pb-16 pt-20 lg:pb-24 lg:pt-28">
-        <div className="mx-auto max-w-[1400px] px-5 lg:px-16">
+      <section className="relative overflow-hidden border-t border-white/10 bg-black pb-16 pt-20 lg:pb-24 lg:pt-28">
+        {signatureBg && (
+          <>
+            {/* scale-110 because the blur softens the image's own edges — it has
+                to overflow its box, which the section then clips */}
+            <img
+              src={signatureBg}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl"
+            />
+            {/* the photo is bright and warm; without this the white type and the
+                lime separators lose all contrast */}
+            <div aria-hidden className="absolute inset-0 bg-black/75" />
+          </>
+        )}
+
+        <div className="relative mx-auto max-w-[1400px] px-5 lg:px-16">
           <Reveal>
             <p className="font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-white/45">
               ONE OF ONE
@@ -92,15 +110,15 @@ export function LandingPage() {
         </div>
 
         {/* full-bleed — the lanes run edge to edge */}
-        <Reveal delay={120} className="mt-14 lg:mt-20">
+        <Reveal delay={120} className="relative mt-14 lg:mt-20">
           <NoteMarquee />
         </Reveal>
 
-        <div className="mx-auto max-w-[1400px] px-5 lg:px-16">
+        <div className="relative mx-auto max-w-[1400px] px-5 lg:px-16">
           <Reveal>
             <Link
               to="/builder"
-              className="mt-12 inline-block border border-white bg-white px-7 py-3 font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-black transition-colors hover:bg-transparent hover:text-white lg:mt-14"
+              className="mt-12 block w-full border border-white bg-white px-10 py-4 text-center font-jetbrains text-xs font-medium uppercase tracking-[0.1em] text-black transition-colors hover:bg-transparent hover:text-white sm:inline-block sm:w-auto lg:mt-14 lg:px-12 lg:py-5"
             >
               OPEN THE SCENT BUILDER
             </Link>
