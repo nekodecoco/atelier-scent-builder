@@ -1,4 +1,6 @@
-import { Dices, Droplets, RotateCcw, ShoppingBag } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { BookmarkPlus, Dices, Droplets, RotateCcw, ShoppingBag } from 'lucide-react';
 import {
   getCustomIngredients,
   INGREDIENTS,
@@ -7,6 +9,8 @@ import {
   type NoteKey,
 } from '../../data/ingredients';
 import { formatPeso, priceFor } from '../../lib/pricing';
+import { saveBlend } from '../../lib/savedBlends';
+import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useCartStore';
 import { useCatalogStore } from '../../store/useCatalogStore';
 import { useScentStore } from '../../store/useScentStore';
@@ -35,6 +39,10 @@ export function ScentBuilder() {
   const blended = useScentStore((s) => s.blended);
   const toggleBlended = useScentStore((s) => s.toggleBlended);
   const addItem = useCartStore((s) => s.addItem);
+  const user = useAuthStore((s) => s.user);
+  const navigate = useNavigate();
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
   // re-render when admin-set pricing loads/changes
   useCatalogStore((s) => s.pricing);
 
@@ -70,6 +78,27 @@ export function ScentBuilder() {
       unitPrice: priceFor(bottleSize, concentration),
       formula: { selected: { ...selected }, percentages: { ...percentages } },
     });
+  };
+
+  const saveCurrentBlend = async () => {
+    if (!user) {
+      navigate('/account'); // prompt sign-in — no account, nowhere to save
+      return;
+    }
+    const { customName, selected, percentages } = useScentStore.getState();
+    setSaveState('saving');
+    setSaveError(null);
+    const err = await saveBlend(customName.trim() || 'Unnamed Blend', {
+      selected: { ...selected },
+      percentages: { ...percentages },
+    });
+    if (err) {
+      setSaveState('idle');
+      setSaveError(err);
+      return;
+    }
+    setSaveState('saved');
+    setTimeout(() => setSaveState('idle'), 2500);
   };
 
   return (
@@ -159,6 +188,27 @@ export function ScentBuilder() {
             <ShoppingBag size={14} aria-hidden />
             ADD TO CART · {bottleSize} ML · {concentration}% · {formatPeso(priceFor(bottleSize, concentration))}
           </button>
+
+          <button
+            type="button"
+            onClick={saveCurrentBlend}
+            disabled={saveState === 'saving'}
+            className="flex items-center justify-center gap-2 rounded border border-ivory-line px-4 py-3 font-sans text-[10px] tracking-luxe text-stone transition-colors hover:border-gold-deep hover:text-gold-deep disabled:opacity-50 dark:border-night-line dark:hover:border-gold dark:hover:text-gold"
+          >
+            <BookmarkPlus size={13} aria-hidden />
+            {saveState === 'saving'
+              ? 'SAVING…'
+              : saveState === 'saved'
+                ? 'SAVED TO YOUR ACCOUNT'
+                : user
+                  ? 'SAVE THIS BLEND'
+                  : 'SIGN IN TO SAVE THIS BLEND'}
+          </button>
+          {saveError && (
+            <p className="font-sans text-xs text-red-400" role="alert">
+              Couldn't save: {saveError}
+            </p>
+          )}
         </div>
       </div>
 
