@@ -1,60 +1,12 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { HeroSlider } from '../components/ui/HeroSlider';
 import { LandingProductCard } from '../components/ui/LandingProductCard';
-import { ProductBottle } from '../components/ui/ProductBottle';
+import { NoteMarquee } from '../components/ui/NoteMarquee';
 import { Reveal } from '../components/ui/Reveal';
 import { PREMADE_SCENTS } from '../data/premadeScents';
-import { MASTER_BLEND } from '../lib/blend';
 import { useCatalogStore } from '../store/useCatalogStore';
-
-const HOUSE_FORMULA = {
-  selected: { top: ['yuzu'], heart: ['iris'], base: ['white-musk'] },
-  percentages: { ...MASTER_BLEND },
-};
-
-// Heavy WebGL scene — code-split so the landing page's initial load stays light.
-const BottleShowcase = lazy(() =>
-  import('../components/three/BottleShowcase').then((m) => ({ default: m.BottleShowcase })),
-);
-
-/**
- * Mounts the live 3D bottle only once its stage scrolls near the viewport,
- * falling back to the flat SVG bottle until then (and while the chunk loads).
- */
-function Bottle3DStage() {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || visible) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: '200px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [visible]);
-
-  const fallback = (
-    <div className="flex h-full items-center justify-center">
-      <ProductBottle formula={HOUSE_FORMULA} name="Yours" className="h-72 w-auto" />
-    </div>
-  );
-
-  return (
-    <div ref={ref} className="h-full w-full">
-      {visible ? <Suspense fallback={fallback}>{<BottleShowcase />}</Suspense> : fallback}
-    </div>
-  );
-}
 
 export function LandingPage() {
   const { hash } = useLocation();
@@ -105,55 +57,53 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-t border-black/10 bg-bone-dim px-5 py-20 lg:px-8 lg:py-28">
-        <div className="grid items-center gap-12 md:grid-cols-[1.05fr_1fr] lg:gap-16">
+      {/* Black stage: the full width becomes the asset — a long, slow slide of
+          the note palette — rather than dead space around a centred object. */}
+      <section className="border-t border-white/10 bg-black pb-16 pt-20 lg:pb-24 lg:pt-28">
+        <div className="mx-auto max-w-[1400px] px-5 lg:px-16">
           <Reveal>
-            <p className="font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-graphite">
+            <p className="font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-white/45">
               ONE OF ONE
             </p>
-            <h2 className="mt-3 font-caslon text-4xl leading-[1.02] tracking-[-0.02em] text-black sm:text-5xl lg:text-6xl">
+            <h2 className="mt-4 font-caslon text-5xl leading-[1.02] tracking-[-0.02em] text-white sm:text-7xl lg:text-8xl">
               Your signature,
               <br />
               distilled
             </h2>
-            <p className="mt-5 max-w-md font-hanken text-sm leading-relaxed text-graphite">
-              Balance top, heart, and base in a live 3D bottle, watch your name print on the
-              label, and have it hand-mixed to your exact formula — or describe a feeling and
-              let the AI concierge compose it for you.
-            </p>
-            <div className="mt-7 flex items-center gap-3 font-jetbrains text-[10px] uppercase tracking-[0.1em]">
-              <span className="text-black">Compose</span>
-              <span aria-hidden className="text-graphite/50">
-                →
-              </span>
-              <span className="text-black">Name</span>
-              <span aria-hidden className="text-graphite/50">
-                →
-              </span>
-              <span className="text-black">Hand-mix</span>
+            <div className="mt-8 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+              <p className="max-w-md font-hanken text-sm leading-relaxed text-white/60">
+                Balance top, heart, and base in a live 3D bottle, watch your name print on the
+                label, and have it hand-mixed to your exact formula — or describe a feeling and
+                let the AI concierge compose it for you.
+              </p>
+              <div className="flex items-center gap-3 font-jetbrains text-[10px] uppercase tracking-[0.1em]">
+                <span className="text-white">Compose</span>
+                <span aria-hidden className="text-lime">
+                  →
+                </span>
+                <span className="text-white">Name</span>
+                <span aria-hidden className="text-lime">
+                  →
+                </span>
+                <span className="text-white">Hand-mix</span>
+              </div>
             </div>
+          </Reveal>
+        </div>
+
+        {/* full-bleed — the lanes run edge to edge */}
+        <Reveal delay={120} className="mt-14 lg:mt-20">
+          <NoteMarquee />
+        </Reveal>
+
+        <div className="mx-auto max-w-[1400px] px-5 lg:px-16">
+          <Reveal>
             <Link
               to="/builder"
-              className="mt-7 inline-block border border-black bg-black px-7 py-3 font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-white transition-colors hover:bg-white hover:text-black"
+              className="mt-12 inline-block border border-white bg-white px-7 py-3 font-jetbrains text-[10px] font-medium uppercase tracking-[0.1em] text-black transition-colors hover:bg-transparent hover:text-white lg:mt-14"
             >
               OPEN THE SCENT BUILDER
             </Link>
-          </Reveal>
-
-          <Reveal delay={120}>
-            <div className="relative mx-auto h-[440px] w-full max-w-md">
-              <div
-                aria-hidden
-                className="absolute inset-0"
-                style={{
-                  background:
-                    'radial-gradient(ellipse 70% 58% at 50% 45%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 70%)',
-                }}
-              />
-              <div className="relative h-full w-full">
-                <Bottle3DStage />
-              </div>
-            </div>
           </Reveal>
         </div>
       </section>
