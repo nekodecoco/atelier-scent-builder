@@ -23,8 +23,14 @@ Restart the dev server afterward (`npm run dev`).
 
 Open **SQL Editor** in the Supabase dashboard and run:
 
+This block is safe to re-run on an existing database — `if not exists` skips the
+table, enabling RLS twice is a no-op, and each policy is dropped before it is
+recreated. (Without those guards, `create table` on an existing `orders` fails
+with `42P07` and Postgres aborts the whole script, so the RLS statements below it
+would silently never run.)
+
 ```sql
-create table public.orders (
+create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users,
   created_at timestamptz not null default now(),
@@ -36,9 +42,11 @@ create table public.orders (
 
 alter table public.orders enable row level security;
 
+drop policy if exists "read own orders" on public.orders;
 create policy "read own orders" on public.orders
   for select using (auth.uid() = user_id);
 
+drop policy if exists "insert own orders" on public.orders;
 create policy "insert own orders" on public.orders
   for insert with check (auth.uid() = user_id);
 ```
@@ -55,7 +63,7 @@ Row Level Security means every user can only ever see and create their own order
 > ```
 >
 > If `relrowsecurity` is `false` or the `read own orders` policy is missing, re-run the
-> `enable row level security` + `read own orders` / `insert own orders` block above.
+> block above — it is idempotent, so it will fix the policies without touching your data.
 
 ## 4. Auth settings
 
