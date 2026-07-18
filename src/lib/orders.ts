@@ -72,14 +72,23 @@ export async function fetchMyOrders(): Promise<{ orders?: OrderRecord[]; error?:
     // Scope to the signed-in user explicitly. RLS is the real security boundary,
     // but this filter keeps the account page correct even if RLS is misconfigured
     // and stops admin accounts (which RLS lets read every order) seeing others' here.
-    const { data, error } = await supabase
-      .from('orders')
-      .select('id, created_at, status, total, currency, items, shipping')
-      .eq('user_id', userData.user.id)
-      .order('created_at', { ascending: false });
+    // The `shipping` column arrives with the fulfillment SQL. Unlike placeOrder,
+    // this read stays schema-tolerant: past orders without an address line beat no
+    // order history at all.
+    const read = (columns: string) =>
+      supabase!
+        .from('orders')
+        .select(columns)
+        .eq('user_id', userData.user.id)
+        .order('created_at', { ascending: false });
+
+    let { data, error } = await read('id, created_at, status, total, currency, items, shipping');
+    if (error && /shipping/.test(error.message)) {
+      ({ data, error } = await read('id, created_at, status, total, currency, items'));
+    }
 
     if (error) return { error: error.message };
-    return { orders: (data ?? []).map(toOrderRecord) };
+    return { orders: ((data ?? []) as unknown as Record<string, unknown>[]).map(toOrderRecord) };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Could not load your orders.' };
   }

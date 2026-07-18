@@ -1,6 +1,6 @@
 import { NOTE_KEYS, type Ingredient, type NoteKey } from '../data/ingredients';
 import type { PremadeScent, ScentFormula } from '../data/premadeScents';
-import type { OrderRecord } from './orders';
+import { toOrderRecord, type OrderRecord } from './orders';
 import { DEFAULT_PRICING, type PremadePriceMap, type PricingConfig } from './pricing';
 import type { BottleSize } from './recipe';
 import { supabase } from './supabase';
@@ -360,12 +360,22 @@ export async function deleteHeroImage(slot: string): Promise<string | null> {
 
 export async function fetchAllOrders(): Promise<{ orders?: AdminOrderRecord[]; error?: string }> {
   if (!supabase) return { error: 'Supabase is not configured.' };
-  const { data, error } = await supabase
-    .from('orders')
-    .select('id, created_at, status, total, currency, items, email')
-    .order('created_at', { ascending: false });
+  // Schema-tolerant like fetchMyOrders: the address is worth showing, but not at
+  // the cost of the whole order queue on a database that hasn't run the SQL yet.
+  const read = (columns: string) =>
+    supabase!.from('orders').select(columns).order('created_at', { ascending: false });
+
+  let { data, error } = await read('id, created_at, status, total, currency, items, email, shipping');
+  if (error && /shipping/.test(error.message)) {
+    ({ data, error } = await read('id, created_at, status, total, currency, items, email'));
+  }
   if (error) return { error: error.message };
-  return { orders: (data ?? []) as AdminOrderRecord[] };
+  return {
+    orders: ((data ?? []) as unknown as Record<string, unknown>[]).map((row) => ({
+      ...toOrderRecord(row),
+      email: (row.email ?? null) as string | null,
+    })),
+  };
 }
 
 export async function updateOrderStatus(orderId: string, status: string): Promise<string | null> {

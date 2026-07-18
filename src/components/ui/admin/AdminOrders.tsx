@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Loader2, PackageOpen } from 'lucide-react';
+import { Check, Copy, Loader2, PackageOpen } from 'lucide-react';
+import { formatAddressLines } from '../../../lib/address';
 import {
   fetchAllOrders,
   ORDER_STATUSES,
@@ -14,6 +15,7 @@ const dateFormat = new Intl.DateTimeFormat('en-PH', { dateStyle: 'medium', timeS
 export function AdminOrders() {
   const [orders, setOrders] = useState<AdminOrderRecord[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllOrders().then((result) => {
@@ -28,6 +30,17 @@ export function AdminOrders() {
     );
     const err = await updateOrderStatus(orderId, status);
     if (err) setError(err);
+  };
+
+  const copyAddress = async (order: AdminOrderRecord) => {
+    if (!order.shipping) return;
+    try {
+      await navigator.clipboard.writeText(formatAddressLines(order.shipping).join('\n'));
+      setCopiedId(order.id);
+      setTimeout(() => setCopiedId((id) => (id === order.id ? null : id)), 1500);
+    } catch {
+      setError('Could not copy — select the address text manually.');
+    }
   };
 
   if (error) {
@@ -70,6 +83,7 @@ export function AdminOrders() {
               </div>
               <div className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
                 {dateFormat.format(new Date(order.created_at))} · Ref {order.id.slice(0, 8)}
+                {order.shipping?.phone ? ` · ${order.shipping.phone}` : ''}
               </div>
             </div>
             <label className="flex items-center gap-2 font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
@@ -87,6 +101,35 @@ export function AdminOrders() {
               </select>
             </label>
           </div>
+
+          {order.shipping ? (
+            <div className="mt-3 rounded border border-ivory-line/70 bg-white/40 p-3 dark:border-night-line dark:bg-night-card">
+              <div className="flex items-start justify-between gap-3">
+                <address className="font-sans text-xs not-italic leading-relaxed text-stone">
+                  {formatAddressLines(order.shipping).map((line) => (
+                    <div key={line}>{line}</div>
+                  ))}
+                </address>
+                <button
+                  type="button"
+                  onClick={() => copyAddress(order)}
+                  aria-label={`Copy the shipping address for order ${order.id.slice(0, 8)}`}
+                  className="flex flex-shrink-0 items-center gap-1.5 rounded border border-ivory-line px-2.5 py-1.5 font-sans text-[10px] tracking-luxe text-stone transition-colors hover:border-gold-deep hover:text-gold-deep dark:border-night-line dark:hover:border-gold dark:hover:text-gold"
+                >
+                  {copiedId === order.id ? (
+                    <Check size={11} aria-hidden />
+                  ) : (
+                    <Copy size={11} aria-hidden />
+                  )}
+                  {copiedId === order.id ? 'COPIED' : 'COPY'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="mt-3 font-sans text-xs text-red-400" role="alert">
+              No shipping address on this order — contact {order.email ?? 'the customer'}.
+            </p>
+          )}
 
           <ul className="mt-3 flex flex-col gap-1.5">
             {order.items.map((item) => (

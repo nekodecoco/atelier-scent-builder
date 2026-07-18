@@ -75,6 +75,13 @@ export function OrderList() {
             </span>
           </div>
 
+          {order.shipping && (
+            <p className="mt-1.5 font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
+              Ship to {order.shipping.recipient}
+              {order.shipping.city ? ` · ${order.shipping.city}` : ''}
+            </p>
+          )}
+
           <ul className="mt-3 flex flex-col gap-1.5">
             {order.items.map((item) => (
               <li
