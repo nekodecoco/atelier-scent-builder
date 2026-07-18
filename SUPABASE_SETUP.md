@@ -23,8 +23,14 @@ Restart the dev server afterward (`npm run dev`).
 
 Open **SQL Editor** in the Supabase dashboard and run:
 
+This block is safe to re-run on an existing database — `if not exists` skips the
+table, enabling RLS twice is a no-op, and each policy is dropped before it is
+recreated. (Without those guards, `create table` on an existing `orders` fails
+with `42P07` and Postgres aborts the whole script, so the RLS statements below it
+would silently never run.)
+
 ```sql
-create table public.orders (
+create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users,
   created_at timestamptz not null default now(),
@@ -36,9 +42,11 @@ create table public.orders (
 
 alter table public.orders enable row level security;
 
+drop policy if exists "read own orders" on public.orders;
 create policy "read own orders" on public.orders
   for select using (auth.uid() = user_id);
 
+drop policy if exists "insert own orders" on public.orders;
 create policy "insert own orders" on public.orders
   for insert with check (auth.uid() = user_id);
 ```
@@ -55,7 +63,7 @@ Row Level Security means every user can only ever see and create their own order
 > ```
 >
 > If `relrowsecurity` is `false` or the `read own orders` policy is missing, re-run the
-> `enable row level security` + `read own orders` / `insert own orders` block above.
+> block above — it is idempotent, so it will fix the policies without touching your data.
 
 ## 4. Auth settings
 
@@ -76,19 +84,22 @@ then redeploy:
 These power the synced cart (a signed-in customer's cart follows them across devices)
 and saved favorite blends. Run in **SQL Editor**:
 
+This block is safe to re-run — see the note on the orders table above.
+
 ```sql
 -- one cart per user, mirrored across devices (guests keep a localStorage cart)
-create table public.carts (
+create table if not exists public.carts (
   user_id uuid primary key references auth.users,
   items jsonb not null default '[]',
   updated_at timestamptz not null default now()
 );
 alter table public.carts enable row level security;
+drop policy if exists "own cart" on public.carts;
 create policy "own cart" on public.carts
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- a customer's saved builder formulas ("favorite blends")
-create table public.saved_blends (
+create table if not exists public.saved_blends (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users,
   name text not null,
@@ -96,10 +107,13 @@ create table public.saved_blends (
   created_at timestamptz not null default now()
 );
 alter table public.saved_blends enable row level security;
+drop policy if exists "read own saved blends" on public.saved_blends;
 create policy "read own saved blends" on public.saved_blends
   for select using (auth.uid() = user_id);
+drop policy if exists "insert own saved blends" on public.saved_blends;
 create policy "insert own saved blends" on public.saved_blends
   for insert with check (auth.uid() = user_id);
+drop policy if exists "delete own saved blends" on public.saved_blends;
 create policy "delete own saved blends" on public.saved_blends
   for delete using (auth.uid() = user_id);
 ```
@@ -111,45 +125,57 @@ the local cart and hides the saved-blends UI.
 
 The `/admin` page needs three more tables and an extra column. Run this in **SQL Editor**:
 
+This block is safe to re-run — see the note on the orders table above. That matters most
+here: a bare `alter table … add column` or `create policy` aborts on the second run, and
+because Postgres aborts the *whole* script, every statement below it silently never runs.
+The failure mode is an "admin" who cannot read orders, with no error they would notice.
+
 ```sql
 -- who is allowed to administer the shop
-create table public.admins (
+create table if not exists public.admins (
   user_id uuid primary key references auth.users
 );
 alter table public.admins enable row level security;
+drop policy if exists "read own admin flag" on public.admins;
 create policy "read own admin flag" on public.admins
   for select using (auth.uid() = user_id);
 
 -- stock for premade scents (no row = treated as in stock)
-create table public.premade_stock (
+create table if not exists public.premade_stock (
   scent_id text primary key,
   stock integer not null default 0
 );
 alter table public.premade_stock enable row level security;
+drop policy if exists "public read stock" on public.premade_stock;
 create policy "public read stock" on public.premade_stock
   for select using (true);
+drop policy if exists "admin write stock" on public.premade_stock;
 create policy "admin write stock" on public.premade_stock
   for all
   using (exists (select 1 from public.admins where user_id = auth.uid()))
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 
 -- which builder ingredients are available (no row = available)
-create table public.ingredient_availability (
+create table if not exists public.ingredient_availability (
   ingredient_id text primary key,
   available boolean not null default true
 );
 alter table public.ingredient_availability enable row level security;
+drop policy if exists "public read availability" on public.ingredient_availability;
 create policy "public read availability" on public.ingredient_availability
   for select using (true);
+drop policy if exists "admin write availability" on public.ingredient_availability;
 create policy "admin write availability" on public.ingredient_availability
   for all
   using (exists (select 1 from public.admins where user_id = auth.uid()))
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 
 -- orders: capture customer email + let admins see and update everything
-alter table public.orders add column email text;
+alter table public.orders add column if not exists email text;
+drop policy if exists "admins read all orders" on public.orders;
 create policy "admins read all orders" on public.orders
   for select using (exists (select 1 from public.admins where user_id = auth.uid()));
+drop policy if exists "admins update orders" on public.orders;
 create policy "admins update orders" on public.orders
   for update
   using (exists (select 1 from public.admins where user_id = auth.uid()))
@@ -157,7 +183,8 @@ create policy "admins update orders" on public.orders
 
 -- make yourself the admin (must have signed up in the app first)
 insert into public.admins (user_id)
-  select id from auth.users where email = 'nikko.alferez@gmail.com';
+  select id from auth.users where email = 'nikko.alferez@gmail.com'
+on conflict (user_id) do nothing;
 ```
 
 After running it, sign in with that account and an **ADMIN** link appears in the header.
@@ -167,9 +194,11 @@ After running it, sign in with that account and an **ADMIN** link appears in the
 Lets the admin add their own builder ingredients and premade perfumes, and hide
 built-in house blends. Run in **SQL Editor**:
 
+This block is safe to re-run — see the note on the orders table above.
+
 ```sql
 -- admin-created builder ingredients
-create table public.custom_ingredients (
+create table if not exists public.custom_ingredients (
   id uuid primary key default gen_random_uuid(),
   note text not null check (note in ('top','heart','base')),
   name text not null,
@@ -179,15 +208,17 @@ create table public.custom_ingredients (
   created_at timestamptz not null default now()
 );
 alter table public.custom_ingredients enable row level security;
+drop policy if exists "public read custom ingredients" on public.custom_ingredients;
 create policy "public read custom ingredients" on public.custom_ingredients
   for select using (true);
+drop policy if exists "admin write custom ingredients" on public.custom_ingredients;
 create policy "admin write custom ingredients" on public.custom_ingredients
   for all
   using (exists (select 1 from public.admins where user_id = auth.uid()))
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 
 -- admin-created premade perfumes
-create table public.custom_premades (
+create table if not exists public.custom_premades (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   tagline text not null default '',
@@ -196,15 +227,17 @@ create table public.custom_premades (
   created_at timestamptz not null default now()
 );
 alter table public.custom_premades enable row level security;
+drop policy if exists "public read custom premades" on public.custom_premades;
 create policy "public read custom premades" on public.custom_premades
   for select using (true);
+drop policy if exists "admin write custom premades" on public.custom_premades;
 create policy "admin write custom premades" on public.custom_premades
   for all
   using (exists (select 1 from public.admins where user_id = auth.uid()))
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 
 -- built-in house blends can now be hidden from the collection
-alter table public.premade_stock add column hidden boolean not null default false;
+alter table public.premade_stock add column if not exists hidden boolean not null default false;
 ```
 
 ## Editable pricing
@@ -212,30 +245,39 @@ alter table public.premade_stock add column hidden boolean not null default fals
 Lets the admin set builder prices per bottle size (plus the oil surcharge) and
 give each premade its own price. Run in **SQL Editor**:
 
+This block is safe to re-run — see the note on the orders table above. The seed row uses
+`on conflict do nothing`, so re-running it will not overwrite prices you have since edited
+in `/admin`.
+
 ```sql
-create table public.shop_settings (
+create table if not exists public.shop_settings (
   key text primary key,
   value jsonb not null
 );
 alter table public.shop_settings enable row level security;
+drop policy if exists "public read settings" on public.shop_settings;
 create policy "public read settings" on public.shop_settings
   for select using (true);
+drop policy if exists "admin write settings" on public.shop_settings;
 create policy "admin write settings" on public.shop_settings
   for all
   using (exists (select 1 from public.admins where user_id = auth.uid()))
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 
 insert into public.shop_settings (key, value) values
-  ('pricing', '{"bySize": {"30": 1450, "50": 2150, "100": 3600}, "oilSurchargePerMl": 25}');
+  ('pricing', '{"bySize": {"30": 1450, "50": 2150, "100": 3600}, "oilSurchargePerMl": 25}')
+on conflict (key) do nothing;
 
 -- per-perfume prices; no row = perfume uses the builder size price
-create table public.premade_prices (
+create table if not exists public.premade_prices (
   scent_id text primary key,
   prices jsonb not null
 );
 alter table public.premade_prices enable row level security;
+drop policy if exists "public read premade prices" on public.premade_prices;
 create policy "public read premade prices" on public.premade_prices
   for select using (true);
+drop policy if exists "admin write premade prices" on public.premade_prices;
 create policy "admin write premade prices" on public.premade_prices
   for all
   using (exists (select 1 from public.admins where user_id = auth.uid()))
@@ -335,7 +377,7 @@ create policy "admin write hero images" on public.hero_images
 
 ## Updating an order's status
 
-Orders start as `pending`. To update one after you've mixed/shipped it, run in SQL Editor:
+Orders start as `pending`. `/admin` has a dropdown on every order, but you can also run:
 
 ```sql
 update public.orders set status = 'shipped' where id = 'the-order-id';
