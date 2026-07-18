@@ -301,6 +301,28 @@ create policy "admin write premade prices" on public.premade_prices
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 ```
 
+## Flat shipping fee
+
+One flat PHP delivery fee added to every order at checkout, edited in `/admin`
+under "Custom blend prices" (0 = free shipping and hides the fee line
+everywhere). The app works without this SQL — it just treats shipping as free
+and skips writing the breakdown column.
+
+Safe to re-run. The seed uses `on conflict do nothing`, so a fee you have since
+edited in `/admin` is never overwritten. (Requires the `shop_settings` table
+from "Editable pricing" above — included in that block.)
+
+```sql
+insert into public.shop_settings (key, value) values
+  ('shipping', '{"flatFee": 0}')
+on conflict (key) do nothing;
+
+-- The fee this order was actually charged, frozen at placement (like
+-- orders.shipping). `total` already includes it; this column is only the
+-- display breakdown. Null on past orders = no fee line shown.
+alter table public.orders add column if not exists shipping_fee numeric;
+```
+
 ## Product & hero photos (optional)
 
 Each perfume card and hero slide shows a generative visual by default. In the

@@ -108,11 +108,18 @@ export function OrderList() {
               <RotateCw size={11} aria-hidden />
               REORDER
             </button>
-            <div className="flex items-baseline gap-2">
-              <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">Total</span>
-              <span className="font-display text-xl text-neutral-900 dark:text-cream">
-                {formatPeso(order.total)}
-              </span>
+            <div className="text-right">
+              <div className="flex items-baseline justify-end gap-2">
+                <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">Total</span>
+                <span className="font-display text-xl text-neutral-900 dark:text-cream">
+                  {formatPeso(order.total)}
+                </span>
+              </div>
+              {order.shipping_fee != null && order.shipping_fee > 0 && (
+                <div className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
+                  incl. shipping {formatPeso(order.shipping_fee)}
+                </div>
+              )}
             </div>
           </div>
         </li>

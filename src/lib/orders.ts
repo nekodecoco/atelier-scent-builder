@@ -11,6 +11,12 @@ export interface OrderRecord {
   items: CartItem[];
   /** The address this order ships to, snapshotted at checkout. */
   shipping: ShippingAddress | null;
+  /**
+   * The delivery fee this order was charged, frozen at placement. `total`
+   * already includes it — this is only the display breakdown. Null = placed
+   * before the fee existed (or on a DB without the column): no fee line.
+   */
+  shipping_fee: number | null;
 }
 
 /**
@@ -27,6 +33,7 @@ export async function placeOrder(
   items: CartItem[],
   total: number,
   shipping: ShippingAddress,
+  shippingFee: number,
 ): Promise<{ orderId?: string; error?: string }> {
   if (!supabase) return { error: 'Supabase is not configured.' };
 
@@ -34,20 +41,28 @@ export async function placeOrder(
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) return { error: 'You need to sign in to place an order.' };
 
-    const { data, error } = await supabase
-      .from('orders')
-      .insert({
-        user_id: userData.user.id,
-        email: userData.user.email ?? null,
-        total,
-        currency: 'PHP',
-        items,
-        shipping,
-      })
-      .select('id')
-      .single();
+    const insert = (row: Record<string, unknown>) =>
+      supabase!.from('orders').insert(row).select('id').single();
 
-    if (error) return { error: error.message };
+    const row = {
+      user_id: userData.user.id,
+      email: userData.user.email ?? null,
+      total,
+      currency: 'PHP',
+      items,
+      shipping,
+      shipping_fee: shippingFee,
+    };
+    let { data, error } = await insert(row);
+    // Narrow carve-out from the no-retry rule above: shipping_fee is display
+    // breakdown only (total already includes it), so an order on a DB without
+    // the column is still correct and shippable. The address is never dropped.
+    if (error && /shipping_fee/.test(error.message)) {
+      const { shipping_fee: _omitted, ...withoutFee } = row;
+      ({ data, error } = await insert(withoutFee));
+    }
+
+    if (error || !data) return { error: error?.message ?? 'Could not place your order.' };
     return { orderId: data.id as string };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Could not place your order.' };
@@ -59,6 +74,7 @@ export function toOrderRecord(row: Record<string, unknown>): OrderRecord {
   return {
     ...(row as unknown as OrderRecord),
     shipping: row.shipping ? normalizeAddress(row.shipping) : null,
+    shipping_fee: row.shipping_fee == null ? null : Number(row.shipping_fee),
   };
 }
 
@@ -82,7 +98,12 @@ export async function fetchMyOrders(): Promise<{ orders?: OrderRecord[]; error?:
         .eq('user_id', userData.user.id)
         .order('created_at', { ascending: false });
 
-    let { data, error } = await read('id, created_at, status, total, currency, items, shipping');
+    // Ordered retries: /shipping/ also matches "shipping_fee", so test the fee
+    // column first — otherwise a fee-less DB would needlessly drop the address too.
+    let { data, error } = await read('id, created_at, status, total, currency, items, shipping, shipping_fee');
+    if (error && /shipping_fee/.test(error.message)) {
+      ({ data, error } = await read('id, created_at, status, total, currency, items, shipping'));
+    }
     if (error && /shipping/.test(error.message)) {
       ({ data, error } = await read('id, created_at, status, total, currency, items'));
     }

@@ -28,6 +28,10 @@ export function CheckoutPage() {
   const [placedId, setPlacedId] = useState<string | null>(null);
 
   const subtotal = cartSubtotal(items);
+  // Store subscription (not getShippingFee()) so the summary re-renders when the
+  // catalog finishes loading the admin-set fee.
+  const shippingFee = useCatalogStore((s) => s.shipping.flatFee);
+  const total = subtotal + shippingFee;
 
   // Prefill from the saved profile. Best-effort: fetchMyProfile swallows a missing
   // table so a shop without the profiles SQL just starts from a blank form.
@@ -53,7 +57,7 @@ export function CheckoutPage() {
 
     setPlacing(true);
     setError(null);
-    const result = await placeOrder(items, subtotal, clean);
+    const result = await placeOrder(items, total, clean, shippingFee);
     setPlacing(false);
 
     if (result.error) {
@@ -181,7 +185,7 @@ export function CheckoutPage() {
             className="mt-4 flex w-full items-center justify-center gap-2 rounded bg-gold-deep px-4 py-3.5 font-sans text-[10px] tracking-luxe text-ivory transition-opacity hover:opacity-90 disabled:opacity-50 dark:bg-gold dark:text-night"
           >
             {placing && <Loader2 size={13} className="animate-spin" aria-hidden />}
-            {placing ? 'PLACING ORDER…' : `PLACE ORDER · ${formatPeso(subtotal)}`}
+            {placing ? 'PLACING ORDER…' : `PLACE ORDER · ${formatPeso(total)}`}
           </button>
         </form>
 
@@ -209,13 +213,31 @@ export function CheckoutPage() {
               </li>
             ))}
           </ul>
-          <div className="mt-4 flex items-baseline justify-between px-5">
-            <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
-              Total
-            </span>
-            <span className="font-display text-2xl text-neutral-900 dark:text-cream">
-              {formatPeso(subtotal)}
-            </span>
+          <div className="mt-4 space-y-1.5 px-5">
+            <div className="flex items-baseline justify-between">
+              <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
+                Subtotal
+              </span>
+              <span className="font-sans text-xs text-neutral-800 dark:text-cream">
+                {formatPeso(subtotal)}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
+                Shipping
+              </span>
+              <span className="font-sans text-xs text-neutral-800 dark:text-cream">
+                {shippingFee > 0 ? formatPeso(shippingFee) : 'Free'}
+              </span>
+            </div>
+            <div className="flex items-baseline justify-between pt-1.5">
+              <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
+                Total
+              </span>
+              <span className="font-display text-2xl text-neutral-900 dark:text-cream">
+                {formatPeso(total)}
+              </span>
+            </div>
           </div>
         </div>
       </div>

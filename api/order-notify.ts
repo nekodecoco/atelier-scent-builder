@@ -69,6 +69,8 @@ interface OrderRow {
   email: string | null;
   items: OrderItem[] | null;
   shipping: Record<string, string> | null;
+  /** Delivery fee frozen at placement; total already includes it. Absent on old DBs. */
+  shipping_fee?: number | null;
   notified_at: string | null;
 }
 
@@ -137,6 +139,30 @@ function shell(inner: string): string {
   </div>`;
 }
 
+/**
+ * Subtotal + Shipping rows above Total, only when the order snapshotted a fee.
+ * Fee null/0/absent renders nothing, keeping old orders' emails unchanged.
+ */
+function totalRows(order: OrderRow): string {
+  const fee = Number(order.shipping_fee);
+  const breakdown =
+    Number.isFinite(fee) && fee > 0
+      ? `<tr>
+        <td style="padding:8px 0;color:#777">Subtotal</td>
+        <td style="padding:8px 0;text-align:right;color:#777">${escapeHtml(peso.format(order.total - fee))}</td>
+      </tr>
+      <tr>
+        <td style="padding:0 0 8px;color:#777">Shipping</td>
+        <td style="padding:0 0 8px;text-align:right;color:#777">${escapeHtml(peso.format(fee))}</td>
+      </tr>`
+      : '';
+  return `${breakdown}
+      <tr>
+        <td style="padding:12px 0"><strong>Total</strong></td>
+        <td style="padding:12px 0;text-align:right"><strong>${escapeHtml(peso.format(order.total))}</strong></td>
+      </tr>`;
+}
+
 function customerHtml(order: OrderRow): string {
   const lines = addressLines(order.shipping);
   return shell(`
@@ -146,10 +172,7 @@ function customerHtml(order: OrderRow): string {
     </p>
     <table style="width:100%;border-collapse:collapse;margin:20px 0">
       ${itemRows(order.items ?? [])}
-      <tr>
-        <td style="padding:12px 0"><strong>Total</strong></td>
-        <td style="padding:12px 0;text-align:right"><strong>${escapeHtml(peso.format(order.total))}</strong></td>
-      </tr>
+      ${totalRows(order)}
     </table>
     ${
       lines.length
@@ -170,7 +193,11 @@ function ownerHtml(order: OrderRow): string {
   return shell(`
     <h1 style="font-size:22px;font-weight:600">New order · ${escapeHtml(peso.format(order.total))}</h1>
     <p style="color:#555">
-      Ref ${escapeHtml(order.id.slice(0, 8))} · ${escapeHtml(order.email ?? 'no email on file')}
+      Ref ${escapeHtml(order.id.slice(0, 8))} · ${escapeHtml(order.email ?? 'no email on file')}${
+        Number.isFinite(Number(order.shipping_fee)) && Number(order.shipping_fee) > 0
+          ? ` · incl. shipping ${escapeHtml(peso.format(Number(order.shipping_fee)))}`
+          : ''
+      }
     </p>
     <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:#777">Ship to</h2>
     <p style="line-height:1.6;background:#faf8f4;padding:12px;border-radius:6px">
@@ -192,12 +219,16 @@ function ownerHtml(order: OrderRow): string {
 }
 
 async function fetchOrder(id: string, url: string, key: string): Promise<OrderRow | null> {
-  const endpoint = `${url}/rest/v1/orders?id=eq.${encodeURIComponent(
-    id,
-  )}&select=id,created_at,total,currency,email,items,shipping,notified_at`;
-  const response = await fetch(endpoint, {
-    headers: { apikey: key, Authorization: `Bearer ${key}` },
-  });
+  const read = async (columns: string) =>
+    fetch(
+      `${url}/rest/v1/orders?id=eq.${encodeURIComponent(id)}&select=${columns}`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+    );
+  // shipping_fee is display-only; a DB without the column must keep emailing.
+  let response = await read('id,created_at,total,currency,email,items,shipping,shipping_fee,notified_at');
+  if (!response.ok) {
+    response = await read('id,created_at,total,currency,email,items,shipping,notified_at');
+  }
   if (!response.ok) return null;
   const rows = (await response.json()) as OrderRow[];
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;

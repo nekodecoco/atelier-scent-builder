@@ -152,7 +152,8 @@ export function AdminOrders() {
           <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 border-t border-ivory-line/70 pt-3 dark:border-night-line">
             {(() => {
               const estCost = order.items.reduce((sum, item) => sum + orderItemCost(item), 0);
-              const profit = order.total - estCost;
+              // The fee is passed through to the courier, not blend margin.
+              const profit = order.total - estCost - (order.shipping_fee ?? 0);
               return (
                 <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
                   Est. cost {formatPeso(Math.round(estCost))} ·{' '}
@@ -162,11 +163,18 @@ export function AdminOrders() {
                 </span>
               );
             })()}
-            <span className="flex items-baseline gap-2">
-              <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">Total</span>
-              <span className="font-display text-xl text-neutral-900 dark:text-cream">
-                {formatPeso(order.total)}
+            <span className="text-right">
+              <span className="flex items-baseline justify-end gap-2">
+                <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">Total</span>
+                <span className="font-display text-xl text-neutral-900 dark:text-cream">
+                  {formatPeso(order.total)}
+                </span>
               </span>
+              {order.shipping_fee != null && order.shipping_fee > 0 && (
+                <span className="block font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
+                  incl. shipping {formatPeso(order.shipping_fee)}
+                </span>
+              )}
             </span>
           </div>
         </li>
