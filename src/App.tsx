@@ -4,6 +4,7 @@ import { CartDrawer } from './components/ui/CartDrawer';
 import { Header } from './components/ui/Header';
 import { RouteTransition } from './components/ui/RouteTransition';
 import { useCartSync } from './hooks/useCartSync';
+import { applySeo } from './lib/seo';
 import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 import { BuilderPage } from './pages/BuilderPage';
@@ -29,6 +30,12 @@ export default function App() {
   // transition's wave overlay masks the reset.
   useLayoutEffect(() => {
     window.scrollTo(0, 0);
+  }, [location.pathname]);
+
+  // Per-route title/meta/canonical. An effect (not render) so it never runs
+  // during the build-time prerender, which bakes the same tags in statically.
+  useEffect(() => {
+    applySeo(location.pathname);
   }, [location.pathname]);
 
   useCartSync();

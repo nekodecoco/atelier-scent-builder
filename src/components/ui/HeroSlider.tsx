@@ -92,8 +92,13 @@ export function HeroSlider() {
   useCatalogStore((s) => s.premadePrices);
   useCatalogStore((s) => s.pricing);
 
+  // Guarded because this runs at render time, which also executes in Node
+  // during the build prerender (src/prerender.tsx) where window doesn't exist.
   const reducedMotion = useMemo(
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    () =>
+      typeof window === 'undefined'
+        ? false
+        : window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     [],
   );
 
