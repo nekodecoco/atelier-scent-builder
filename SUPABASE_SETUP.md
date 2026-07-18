@@ -79,6 +79,23 @@ then redeploy:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
+The serverless functions need a few more (see [Order emails](#order-emails) below). Only
+`VITE_`-prefixed variables reach the browser — the rest stay server-side:
+
+| Variable | Used by | Required |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | `api/curate.ts` | for the concierge |
+| `RESEND_API_KEY` | `api/order-notify.ts` | for order emails |
+| `SUPABASE_URL` | `api/order-notify.ts` | for order emails |
+| `SUPABASE_SERVICE_ROLE_KEY` | `api/order-notify.ts` | for order emails |
+| `ORDER_FROM_EMAIL` | `api/order-notify.ts` | optional |
+| `OWNER_EMAIL` | `api/order-notify.ts` | optional |
+
+> **`SUPABASE_SERVICE_ROLE_KEY` bypasses RLS completely.** Copy it from
+> **Project Settings → API → service_role**. Never give it a `VITE_` prefix and never
+> import it from `src/` — either would ship a full database bypass to every visitor.
+> It is only ever read inside `api/order-notify.ts`.
+
 ## 6. Cross-device cart & saved blends
 
 These power the synced cart (a signed-in customer's cart follows them across devices)
@@ -536,6 +553,34 @@ where tgrelid = 'public.orders'::regclass and not tgisinternal;
 
 Only lines carrying a `scentId` are tracked, so a cart persisted before that field existed
 (or any custom blend) passes through untouched.
+
+## Order emails
+
+`api/order-notify.ts` emails the customer a confirmation and you a new-order alert, so you
+stop having to poll `/admin` to discover sales. The checkout page calls it fire-and-forget
+after the order commits — an email failure can never lose an order.
+
+1. Sign up at [resend.com](https://resend.com) and create an API key.
+2. Add `RESEND_API_KEY`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel
+   (see the table in §5), then redeploy.
+
+> **Until you verify a domain, customer confirmations go nowhere.** Resend's default
+> sender (`onboarding@resend.dev`) only delivers to the address that owns the Resend
+> account. So your **owner alert works immediately**, but the **customer's confirmation is
+> silently dropped** — this is a Resend restriction, not a bug in the app.
+>
+> To turn customer email on: add a domain in Resend, add the DNS records it gives you, wait
+> for it to verify, then set `ORDER_FROM_EMAIL` to something like
+> `Atelier N°9 <orders@yourdomain.com>` and redeploy. Nothing else changes.
+
+`OWNER_EMAIL` sets where the alert goes (defaults to `nikko.alferez@gmail.com`).
+
+The endpoint takes only an order id and re-reads that order with the service-role key, so
+it never trusts the request body for a recipient or an address. `orders.notified_at` is
+stamped on success, so a retry or a double-click can't send twice.
+
+The Vite dev server does not serve `api/`, so `/api/order-notify` 404s under `npm run dev`
+and checkout simply sends no mail. Use `vercel dev` or a preview deploy to exercise it.
 
 ## Updating an order's status
 
