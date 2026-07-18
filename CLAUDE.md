@@ -14,16 +14,18 @@ npm run build     # tsc --noEmit (the only typecheck) + vite build — the verif
 npm run preview   # serve the production build
 ```
 
-No tests, no linter. `api/curate.ts` is a Vercel function the Vite dev server does **not** serve, so `/api/curate` 404s locally (the concierge degrades gracefully); it runs on Vercel or `vercel dev`. `.claude/launch.json` defines the `dev` server for the browser preview tools.
+No tests, no linter. `api/*.ts` are Vercel functions the Vite dev server does **not** serve, so `/api/curate` and `/api/order-notify` 404 locally (both degrade gracefully); they run on Vercel or `vercel dev`. Note `tsconfig.json` is `"include": ["src"]`, so **`npm run build` does not typecheck `api/`** — a green build proves nothing there. `.claude/launch.json` defines the `dev` server for the browser preview tools.
 
 ## Environment
 
 - `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` in `.env.local` — client-side, optional.
 - `GEMINI_API_KEY` — server-side only, used by `api/curate.ts`.
+- `RESEND_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — server-side only, used by `api/order-notify.ts`. Optional: `ORDER_FROM_EMAIL`, `OWNER_EMAIL`.
+- **`SUPABASE_SERVICE_ROLE_KEY` bypasses RLS entirely** — never `VITE_`-prefix it, never import it from `src/`.
 
 ## Architecture
 
-Vite + React 18 + TypeScript + Tailwind + Motion (`motion/react`). Routes in `src/App.tsx`: `/`, `/builder`, `/collection`, `/account`, `/admin`. `vercel.json` rewrites everything to `index.html`.
+Vite + React 18 + TypeScript + Tailwind + Motion (`motion/react`). Routes in `src/App.tsx`: `/`, `/builder`, `/collection`, `/checkout`, `/account`, `/admin`. `vercel.json` rewrites everything to `index.html`.
 
 ### Route transitions
 
@@ -50,13 +52,22 @@ Admin Supabase data is pushed into module-level singletons so pure functions res
 
 `src/lib/supabase.ts` exports `null` when env vars are missing; every data-layer function (`catalog.ts`, `orders.ts`) guards `if (!supabase)` and returns defaults or an error string — write functions return `string | null`, never throw. Conventions: **no row = default** (missing stock = in stock, etc.); **schema tolerance** (code falls back when a column/table is absent); **images** go to the public `product-images` bucket via `uploadImage()`, URLs saved in `premade_images`/`hero_images` and shown over the generative visuals. `hero_images.slot` is a free-form key, so new image slots need no schema change — just add one to `HeroEditor`'s `SLOTS` and read it off `useCatalogStore().heroImages` (e.g. `signature-bg`, the blurred photo behind the landing's signature section). Schema lives only as SQL in `SUPABASE_SETUP.md` (no migrations) — new tables: enable RLS, use the "public read / admin write via `public.admins` exists-check" policy, and document the SQL there.
 
+### Fulfillment (checkout → address → stock → email)
+
+`/checkout` (`src/pages/CheckoutPage.tsx`) is the only place an order is placed — the cart drawer just navigates there. It still requires an account.
+
+- **The address lives in two places on purpose.** `orders.shipping` is a **snapshot** — what that order actually ships to, frozen at checkout. `profiles.address` is the customer's reusable default, and *only* a convenience for prefilling. Never render an order using the profile: the customer may have moved since. One shape (`ShippingAddress` in `src/lib/address.ts`) is shared by both, the form, the validator, and the email; run any address read out of jsonb through `normalizeAddress` at the load boundary, exactly like `normalizeSelected`. Both are single `jsonb` columns because the address is written once and only ever rendered — never filtered on.
+- **`profiles` deliberately has no admin policy** and must not be given one. It's customer PII, not shop data, so it follows the `carts`/`saved_blends` own-row template rather than the catalog "public read / admin write" one. Admins read the address off the order snapshot instead — granting admin read here would expose every customer's home address forever, including customers who never ordered, for no operational gain.
+- **Stock is decremented by a Postgres trigger** (`orders_apply_stock`), not by client code — `premade_stock` is admin-write under RLS, and only a single `update … where stock >= want` is atomic against two people buying the last bottle. It rejects rather than clamping, keys off `CartItem.scentId` (premade lines only), and treats a missing `premade_stock` row as untracked/unlimited per the "no row = default" rule. `orders_restock_cancelled` puts bottles back when an order is cancelled. The rejection text is customer-facing copy that surfaces through `placeOrder`'s `error`.
+- **Schema tolerance has a deliberate carve-out here — don't "fix" it.** `placeOrder` has *no* fallback retry: an order silently written without an address is strictly worse than a failed order, because nobody can ship it and nobody finds out. It fails loudly instead. The order **reads** (`fetchMyOrders`, `fetchAllOrders`) *are* tolerant of a missing `shipping` column, because past orders without an address line beat no order history at all. Tolerance is about whether a default is meaningful, not a blanket rule.
+
 ### 3D bottle (`src/components/three/`)
 
 React Three Fiber renders a procedural glass bottle. `LiquidLayers` pours three layers sized by live percentages, each colored by `noteColor` (its note's ingredient blend), merging to one color when "blended"; `BottleLabel` prints the name live. `Scene` drives the builder and is now the **only** WebGL entry point — the landing's 3D showcase was replaced by `NoteMarquee`, so no page but `/builder` creates a WebGL context. (three.js still lands in the main bundle, since `Scene` is imported eagerly.)
 
 ### AI Scent Concierge
 
-`api/curate.ts` — a deliberately **single-file** ESM function (Vercel can't resolve extensionless relative imports, so don't split it or import from `src/`). Calls Gemini (`gemini-flash-latest` rolling alias — pinned versions age out of the free tier) with a structured-output schema; the provider section can swap to the Claude API without changing `CurateResult`. Client `ScentConcierge.tsx` POSTs to `/api/curate` and loads the returned formula (one id per note; the client normalizes).
+`api/curate.ts` — a deliberately **single-file** ESM function (Vercel can't resolve extensionless relative imports, so don't split it or import from `src/`; `api/order-notify.ts` follows the same rule, which is why it re-implements `formatAddressLines` and peso formatting rather than importing them). Calls Gemini (`gemini-flash-latest` rolling alias — pinned versions age out of the free tier) with a structured-output schema; the provider section can swap to the Claude API without changing `CurateResult`. Client `ScentConcierge.tsx` POSTs to `/api/curate` and loads the returned formula (one id per note; the client normalizes).
 
 ### Design system (mid-redesign — read before restyling)
 
