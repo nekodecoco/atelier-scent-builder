@@ -87,6 +87,33 @@ export function ScentProfileCard() {
           {profile.character}
         </p>
       </div>
+
+      {/* Full card width rather than beside the radar: the pole labels collide once the
+          column narrows. */}
+      <div
+        className="mt-4"
+        role="meter"
+        aria-label="How the blend leans"
+        aria-valuemin={-1}
+        aria-valuemax={1}
+        aria-valuenow={profile.lean}
+        aria-valuetext={profile.leanLabel}
+      >
+        <div className="relative h-px w-full bg-stone/30 dark:bg-night-line">
+          <div className="absolute left-1/2 h-1.5 w-px -translate-x-1/2 -translate-y-1/2 bg-stone/30 dark:bg-night-line" />
+          <div
+            className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-deep dark:bg-gold"
+            style={{
+              left: `${50 + profile.lean * 50}%`,
+              transition: 'all 0.4s cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
+        </div>
+        <div className="mt-2 flex justify-between font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
+          <span>masculine</span>
+          <span>feminine</span>
+        </div>
+      </div>
     </div>
   );
 }

@@ -34,6 +34,31 @@ const TRAITS: Record<string, TraitVector> = {
   'white-musk': vec(0.4, 0.3, 0.2, 0.4, 0.0, 0.5),
 };
 
+/**
+ * How each built-in ingredient is conventionally worn: -1 masculine … 0 unisex … +1
+ * feminine. Kept apart from TRAITS because the lean isn't a function of the six axes —
+ * iris is powdery-floral yet reads unisex, lavender is floral-ish yet reads masculine.
+ * Custom notes have no entry and read unisex: a layer implies a character worth guessing
+ * at, but not a gender.
+ */
+const LEAN: Record<string, number> = {
+  bergamot: 0,
+  yuzu: -0.3,
+  'pink-pepper': 0.2,
+  neroli: 0.1,
+  'sicilian-lemon': -0.1,
+  'rose-de-mai': 0.8,
+  'jasmine-sambac': 0.7,
+  iris: 0.2,
+  tuberose: 0.9,
+  lavender: -0.5,
+  sandalwood: -0.3,
+  'vanilla-bourbon': 0.5,
+  amber: 0,
+  oud: -0.7,
+  'white-musk': 0.2,
+};
+
 /** Custom notes without hand-tuned traits inherit their layer's general character */
 const LAYER_DEFAULTS: Record<NoteKey, TraitVector> = {
   top: vec(0.8, 0.3, 0.1, 0.2, 0.2, 0.1),
@@ -63,23 +88,54 @@ const CLOSERS: Record<TraitAxis, string> = {
   warm: 'lingering on the skin for hours',
 };
 
+type LeanBand = 'unisex' | 'leans-masculine' | 'leans-feminine' | 'masculine' | 'feminine';
+
+const LEAN_LABELS: Record<LeanBand, string> = {
+  unisex: 'Unisex',
+  'leans-masculine': 'Leans masculine',
+  'leans-feminine': 'Leans feminine',
+  masculine: 'Distinctly masculine',
+  feminine: 'Distinctly feminine',
+};
+
+const LEAN_CLAUSES: Record<LeanBand, string> = {
+  unisex: 'It wears equally on anyone.',
+  'leans-masculine': 'It leans masculine, but only just.',
+  'leans-feminine': 'It leans feminine, but only just.',
+  masculine: 'It wears unmistakably masculine.',
+  feminine: 'It wears unmistakably feminine.',
+};
+
+function leanBand(lean: number): LeanBand {
+  const strength = Math.abs(lean);
+  if (strength < 0.15) return 'unisex';
+  if (strength < 0.45) return lean < 0 ? 'leans-masculine' : 'leans-feminine';
+  return lean < 0 ? 'masculine' : 'feminine';
+}
+
 export interface ScentProfile {
   values: TraitVector;
   character: string;
+  /** -1 masculine … 0 unisex … +1 feminine */
+  lean: number;
+  leanLabel: string;
 }
 
 export function computeProfile(selected: Selected, percentages: Percentages): ScentProfile {
   const values = vec(0, 0, 0, 0, 0, 0);
+  let lean = 0;
   for (const { note, id, weight } of weightedIngredients(selected, percentages)) {
     const traits = traitsFor(note, id);
     for (const axis of TRAIT_AXES) values[axis] += traits[axis] * weight;
+    lean += (LEAN[id] ?? 0) * weight;
   }
 
   const ranked = [...TRAIT_AXES].sort((a, b) => values[b] - values[a]);
   const [first, second] = ranked;
-  const character = `${cap(AXIS_WORDS[first][0])} and ${AXIS_WORDS[second][1]}, ${CLOSERS[first]}.`;
+  const band = leanBand(lean);
+  const character = `${cap(AXIS_WORDS[first][0])} and ${AXIS_WORDS[second][1]}, ${CLOSERS[first]}. ${LEAN_CLAUSES[band]}`;
 
-  return { values, character };
+  return { values, character, lean, leanLabel: LEAN_LABELS[band] };
 }
 
 function cap(word: string): string {
