@@ -375,6 +375,168 @@ create policy "admin write hero images" on public.hero_images
   with check (exists (select 1 from public.admins where user_id = auth.uid()));
 ```
 
+## Shipping addresses & profiles
+
+Without this, an order arrives with an email address and nothing to ship to. Run in
+**SQL Editor** — safe to re-run.
+
+```sql
+-- The address the order actually ships to, captured at checkout.
+--
+-- One jsonb column rather than eight flat ones: it is written once and only ever
+-- rendered — never filtered on — and one column keeps a single shared shape across
+-- orders.shipping, profiles.address, the checkout form, and the notification email.
+-- Shape: { recipient, phone, line1, line2, barangay, city, province, postcode, landmark }
+alter table public.orders add column if not exists shipping jsonb;
+
+-- Stamped once by api/order-notify.ts so a retry or a double-click can't email twice.
+-- Only the service-role key ever writes it.
+alter table public.orders add column if not exists notified_at timestamptz;
+
+-- A customer's reusable default address: prefills checkout, editable on /account.
+--
+-- NOTE: deliberately NOT the "public read / admin write" template the catalog tables
+-- use. This is customer PII, not shop data, so it follows the carts/saved_blends
+-- own-row template instead. Admins get no policy here and must not be given one:
+-- every order already carries its own address snapshot, which is what actually
+-- ships (this profile may have drifted since). Granting admins read here would
+-- expose every customer's home address forever — including customers who never
+-- ordered — for zero operational gain.
+create table if not exists public.profiles (
+  user_id uuid primary key references auth.users on delete cascade,
+  address jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+
+drop policy if exists "read own profile" on public.profiles;
+create policy "read own profile" on public.profiles
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "insert own profile" on public.profiles;
+create policy "insert own profile" on public.profiles
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "update own profile" on public.profiles;
+create policy "update own profile" on public.profiles
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+```
+
+## Stock decrement (automatic)
+
+Before this, `premade_stock` was a number you typed that nothing ever changed — it drifted
+from reality on the first order, and two customers could both buy the last bottle. These
+triggers make it real. Run in **SQL Editor** — safe to re-run.
+
+```sql
+-- Decrement premade stock in the same transaction as the order insert.
+--
+-- security definer is required: premade_stock is admin-write under RLS and the
+-- customer placing the order is not an admin. search_path is pinned because a
+-- definer function without it is a privilege-escalation hole.
+create or replace function public.apply_order_stock()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  line jsonb;
+  sid  text;
+  want integer;
+begin
+  for line in select * from jsonb_array_elements(coalesce(new.items, '[]'::jsonb))
+  loop
+    -- only premades are stocked; custom blends are mixed to order
+    if line->>'kind' is distinct from 'premade' then continue; end if;
+
+    sid := line->>'scentId';
+    if sid is null or sid = '' then continue; end if;
+
+    want := greatest(1, coalesce((line->>'qty')::int, 1));
+
+    -- A single statement, so it is atomic: the row lock is held to the end of the
+    -- transaction, which means two concurrent orders for the last bottle serialize
+    -- and the loser re-checks `stock >= want` against the committed value.
+    update public.premade_stock
+       set stock = stock - want
+     where scent_id = sid
+       and stock >= want;
+
+    if not found then
+      -- No row at all = untracked = unlimited (the "no row = default" rule the app
+      -- follows in useCatalogStore.isInStock). Only a row that exists and is short
+      -- rejects the order — clamping at 0 would accept an order for bottles that
+      -- don't exist, which is exactly the drift this is meant to fix.
+      if exists (select 1 from public.premade_stock where scent_id = sid) then
+        raise exception 'Sorry — % is out of stock. Please remove it from your cart.',
+          coalesce(line->>'name', sid)
+          using errcode = 'check_violation';
+      end if;
+    end if;
+  end loop;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists orders_apply_stock on public.orders;
+create trigger orders_apply_stock
+  before insert on public.orders
+  for each row execute function public.apply_order_stock();
+
+-- Cancelling an order returns its bottles to stock. Without this the status
+-- dropdown in /admin silently corrupts stock on every cancellation.
+create or replace function public.restock_cancelled_order()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  line jsonb;
+  sid  text;
+  want integer;
+begin
+  -- only on the transition INTO cancelled: re-saving an already-cancelled order
+  -- must not restock a second time
+  if new.status is distinct from 'cancelled' then return new; end if;
+  if old.status is not distinct from 'cancelled' then return new; end if;
+
+  for line in select * from jsonb_array_elements(coalesce(new.items, '[]'::jsonb))
+  loop
+    if line->>'kind' is distinct from 'premade' then continue; end if;
+    sid := line->>'scentId';
+    if sid is null or sid = '' then continue; end if;
+    want := greatest(1, coalesce((line->>'qty')::int, 1));
+
+    -- only restock tracked scents (no row = untracked)
+    update public.premade_stock
+       set stock = stock + want
+     where scent_id = sid;
+  end loop;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists orders_restock_cancelled on public.orders;
+create trigger orders_restock_cancelled
+  after update on public.orders
+  for each row execute function public.restock_cancelled_order();
+```
+
+Verify both triggers exist:
+
+```sql
+select tgname from pg_trigger
+where tgrelid = 'public.orders'::regclass and not tgisinternal;
+-- expect orders_apply_stock and orders_restock_cancelled
+```
+
+Only lines carrying a `scentId` are tracked, so a cart persisted before that field existed
+(or any custom blend) passes through untouched.
+
 ## Updating an order's status
 
 Orders start as `pending`. `/admin` has a dropdown on every order, but you can also run:
@@ -384,3 +546,4 @@ update public.orders set status = 'shipped' where id = 'the-order-id';
 ```
 
 Recognized statuses in the UI: `pending`, `mixing`, `shipped`, `delivered`, `cancelled`.
+Setting `cancelled` returns that order's bottles to stock (see above).
