@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /account
+Disallow: /admin
+
+# PLACEHOLDER domain — update alongside SITE_URL in src/lib/seo.ts
+Sitemap: https://atelier-n9.vercel.app/sitemap.xml

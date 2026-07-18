@@ -14,6 +14,13 @@ export const DEFAULT_PRICING: PricingConfig = {
 
 export type PremadePriceMap = Record<string, Partial<Record<BottleSize, number>>>;
 
+export interface ShippingConfig {
+  /** Flat delivery fee added to every order at checkout; 0 = free shipping. */
+  flatFee: number;
+}
+
+export const DEFAULT_SHIPPING: ShippingConfig = { flatFee: 0 };
+
 /**
  * Admin-set prices live in Supabase and are registered here at runtime
  * (same pattern as the ingredient registry) so pure functions like the
@@ -21,6 +28,7 @@ export type PremadePriceMap = Record<string, Partial<Record<BottleSize, number>>
  */
 let pricing: PricingConfig = DEFAULT_PRICING;
 let premadePrices: PremadePriceMap = {};
+let shipping: ShippingConfig = DEFAULT_SHIPPING;
 
 export function registerPricing(config: PricingConfig): void {
   pricing = config;
@@ -30,8 +38,17 @@ export function registerPremadePrices(map: PremadePriceMap): void {
   premadePrices = map;
 }
 
+export function registerShipping(config: ShippingConfig): void {
+  shipping = config;
+}
+
 export function getPricing(): PricingConfig {
   return pricing;
+}
+
+/** Live config for new checkouts only — placed orders snapshot their fee in orders.shipping_fee. */
+export function getShippingFee(): number {
+  return shipping.flatFee;
 }
 
 export function priceFor(

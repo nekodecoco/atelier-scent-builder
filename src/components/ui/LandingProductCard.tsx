@@ -24,6 +24,7 @@ export function LandingProductCard({ scent, tag }: { scent: PremadeScent; tag?: 
   const quickAdd = () =>
     addItem({
       kind: 'premade',
+      scentId: scent.id,
       name: scent.name,
       bottleSize: size,
       concentration: DEFAULT_CONCENTRATION,

@@ -4,9 +4,11 @@ import { CartDrawer } from './components/ui/CartDrawer';
 import { Header } from './components/ui/Header';
 import { RouteTransition } from './components/ui/RouteTransition';
 import { useCartSync } from './hooks/useCartSync';
+import { applySeo } from './lib/seo';
 import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 import { BuilderPage } from './pages/BuilderPage';
+import { CheckoutPage } from './pages/CheckoutPage';
 import { CollectionPage } from './pages/CollectionPage';
 import { LandingPage } from './pages/LandingPage';
 import { useAuthStore } from './store/useAuthStore';
@@ -30,6 +32,12 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // Per-route title/meta/canonical. An effect (not render) so it never runs
+  // during the build-time prerender, which bakes the same tags in statically.
+  useEffect(() => {
+    applySeo(location.pathname);
+  }, [location.pathname]);
+
   useCartSync();
 
   return (
@@ -38,14 +46,19 @@ export default function App() {
       <CartDrawer />
       <main>
         <RouteTransition>
-          {/* location prop keeps the outgoing page rendering during its exit */}
-          <Routes location={location}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/builder" element={<BuilderPage />} />
-            <Route path="/collection" element={<CollectionPage />} />
-            <Route path="/account" element={<AccountPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-          </Routes>
+          {/* Render prop: pages render the *displayed* location, which trails
+              the live one during the exit so the timer-driven swap decides
+              when the page actually changes. */}
+          {(displayed) => (
+            <Routes location={displayed}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/builder" element={<BuilderPage />} />
+              <Route path="/collection" element={<CollectionPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Routes>
+          )}
         </RouteTransition>
       </main>
       <footer className="border-t border-black/10 bg-bone px-5 py-16 lg:px-8">

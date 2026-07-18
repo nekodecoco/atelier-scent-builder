@@ -7,6 +7,13 @@ import type { BottleSize, Solvent } from '../lib/recipe';
 export interface CartItem {
   id: string;
   kind: 'custom' | 'premade';
+  /**
+   * Which premade this line is, keyed to `premade_stock.scent_id`. Absent on
+   * custom blends (nothing to stock) and on lines carted before this existed.
+   * Matching on `name` instead is not viable — an admin renaming a premade would
+   * detach every past line from its stock row.
+   */
+  scentId?: string;
   name: string;
   bottleSize: BottleSize;
   /** Fragrance oil %, absent on items carted before this field existed (= 15) */
@@ -46,6 +53,7 @@ interface CartState {
 function sameLine(a: Omit<CartItem, 'id' | 'qty'>, b: Omit<CartItem, 'id' | 'qty'>): boolean {
   return (
     a.kind === b.kind &&
+    (a.scentId ?? '') === (b.scentId ?? '') &&
     a.name === b.name &&
     a.bottleSize === b.bottleSize &&
     (a.concentration ?? 15) === (b.concentration ?? 15) &&

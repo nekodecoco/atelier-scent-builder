@@ -7,6 +7,7 @@ import {
   fetchPremadeImages,
   fetchPremadePrices,
   fetchPricing,
+  fetchShippingConfig,
   fetchStock,
   type AvailabilityMap,
   type HeroImageMap,
@@ -17,8 +18,10 @@ import {
 import {
   registerPremadePrices,
   registerPricing,
+  registerShipping,
   type PremadePriceMap,
   type PricingConfig,
+  type ShippingConfig,
 } from '../lib/pricing';
 import {
   getCustomIngredients,
@@ -42,6 +45,7 @@ interface CatalogState {
   customPremades: PremadeScent[];
   pricing: PricingConfig;
   premadePrices: PremadePriceMap;
+  shipping: ShippingConfig;
   premadeImages: PremadeImageMap;
   heroImages: HeroImageMap;
   loaded: boolean;
@@ -58,12 +62,13 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
   customPremades: [],
   pricing: { bySize: { 30: 1450, 50: 2150, 100: 3600 }, oilSurchargePerMl: 25 },
   premadePrices: {},
+  shipping: { flatFee: 0 },
   premadeImages: {},
   heroImages: {},
   loaded: false,
 
   load: async () => {
-    const [{ stock, hidden }, availability, customIngredients, customPremades, pricing, premadePrices, premadeImages, heroImages] =
+    const [{ stock, hidden }, availability, customIngredients, customPremades, pricing, premadePrices, shipping, premadeImages, heroImages] =
       await Promise.all([
         fetchStock(),
         fetchAvailability(),
@@ -71,6 +76,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
         fetchCustomPremades(),
         fetchPricing(),
         fetchPremadePrices(),
+        fetchShippingConfig(),
         fetchPremadeImages(),
         fetchHeroImages(),
       ]);
@@ -79,6 +85,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
     registerCustomIngredients(customIngredients);
     registerPricing(pricing);
     registerPremadePrices(premadePrices);
+    registerShipping(shipping);
     set({
       stock,
       availability,
@@ -87,6 +94,7 @@ export const useCatalogStore = create<CatalogState>((set, get) => ({
       customPremades,
       pricing,
       premadePrices,
+      shipping,
       premadeImages,
       heroImages,
       loaded: true,

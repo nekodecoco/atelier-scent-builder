@@ -1,13 +1,10 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Loader2, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import { Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
 import { NOTE_KEYS } from '../../data/ingredients';
 import { noteColor } from '../../lib/color';
 import { normalizeSelected } from '../../lib/selection';
-import { placeOrder } from '../../lib/orders';
 import { formatPeso } from '../../lib/pricing';
 import { isSupabaseConfigured } from '../../lib/supabase';
-import { useAuthStore } from '../../store/useAuthStore';
 import { cartSubtotal, useCartStore, type CartItem } from '../../store/useCartStore';
 import { SupabaseSetupNotice } from './SupabaseSetupNotice';
 
@@ -84,42 +81,19 @@ export function CartDrawer() {
   const items = useCartStore((s) => s.items);
   const isOpen = useCartStore((s) => s.isOpen);
   const closeCart = useCartStore((s) => s.closeCart);
-  const clear = useCartStore((s) => s.clear);
-  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
-
-  const [placing, setPlacing] = useState(false);
-  const [placedId, setPlacedId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const subtotal = cartSubtotal(items);
 
-  // Closing the drawer also clears the "Order received" screen, so reopening the
-  // cart later returns to the normal (now empty) cart instead of the stale
-  // confirmation. Used by the X button, the backdrop, and after checkout.
-  const handleClose = () => {
-    setPlacedId(null);
-    setError(null);
+  const goToCheckout = () => {
     closeCart();
-  };
-
-  const submitOrder = async () => {
-    setPlacing(true);
-    setError(null);
-    const result = await placeOrder(items, subtotal);
-    setPlacing(false);
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-    setPlacedId(result.orderId ?? '');
-    clear();
+    navigate('/checkout');
   };
 
   return (
     <div aria-hidden={!isOpen} className={isOpen ? '' : 'pointer-events-none'}>
       <div
-        onClick={handleClose}
+        onClick={closeCart}
         className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
@@ -135,7 +109,7 @@ export function CartDrawer() {
           <h2 className="font-display text-2xl text-neutral-900 dark:text-cream">Your cart</h2>
           <button
             type="button"
-            onClick={handleClose}
+            onClick={closeCart}
             aria-label="Close cart"
             className="rounded-full border border-ivory-line p-2 text-stone transition-colors hover:text-neutral-900 dark:border-night-line dark:hover:text-cream"
           >
@@ -144,29 +118,7 @@ export function CartDrawer() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-6">
-          {placedId !== null ? (
-            <div className="mt-10 rounded-lg border border-gold-deep/40 p-6 text-center dark:border-gold/40">
-              <Check size={22} className="mx-auto text-gold-deep dark:text-gold" aria-hidden />
-              <h3 className="mt-3 font-display text-2xl text-neutral-900 dark:text-cream">
-                Order received
-              </h3>
-              <p className="mt-2 font-sans text-xs leading-relaxed text-stone">
-                Reference <span className="text-neutral-800 dark:text-cream">{placedId.slice(0, 8)}</span>.
-                We'll reach out to arrange payment and delivery. You can track it anytime in your
-                account.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  handleClose();
-                  navigate('/account');
-                }}
-                className="mt-5 rounded border border-gold-deep px-5 py-2.5 font-sans text-[10px] tracking-luxe text-gold-deep hover:bg-gold-deep hover:text-ivory dark:border-gold dark:text-gold dark:hover:bg-gold dark:hover:text-night"
-              >
-                VIEW MY ORDERS
-              </button>
-            </div>
-          ) : items.length === 0 ? (
+          {items.length === 0 ? (
             <div className="mt-16 text-center">
               <ShoppingBag size={22} className="mx-auto text-stone-dim" aria-hidden />
               <p className="mt-3 font-display text-xl italic text-stone">Your cart is empty</p>
@@ -183,7 +135,7 @@ export function CartDrawer() {
           )}
         </div>
 
-        {placedId === null && items.length > 0 && (
+        {items.length > 0 && (
           <div className="border-t border-ivory-line px-6 py-5 dark:border-night-line">
             <div className="flex items-baseline justify-between">
               <span className="font-sans text-[10px] uppercase tracking-luxe text-stone-dim">
@@ -194,43 +146,19 @@ export function CartDrawer() {
               </span>
             </div>
 
-            {error && (
-              <p className="mt-3 font-sans text-xs text-red-400" role="alert">
-                {error}
-              </p>
-            )}
-
             {!isSupabaseConfigured ? (
               <div className="mt-4">
                 <SupabaseSetupNotice />
               </div>
-            ) : user ? (
-              <button
-                type="button"
-                onClick={submitOrder}
-                disabled={placing}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded bg-gold-deep px-4 py-3.5 font-sans text-[10px] tracking-luxe text-ivory transition-opacity hover:opacity-90 disabled:opacity-50 dark:bg-gold dark:text-night"
-              >
-                {placing && <Loader2 size={13} className="animate-spin" aria-hidden />}
-                {placing ? 'PLACING ORDER…' : `PLACE ORDER · ${formatPeso(subtotal)}`}
-              </button>
             ) : (
               <button
                 type="button"
-                onClick={() => {
-                  closeCart();
-                  navigate('/account');
-                }}
-                className="mt-4 w-full rounded border border-gold-deep px-4 py-3.5 font-sans text-[10px] tracking-luxe text-gold-deep transition-colors hover:bg-gold-deep hover:text-ivory dark:border-gold dark:text-gold dark:hover:bg-gold dark:hover:text-night"
+                onClick={goToCheckout}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded bg-gold-deep px-4 py-3.5 font-sans text-[10px] tracking-luxe text-ivory transition-opacity hover:opacity-90 dark:bg-gold dark:text-night"
               >
-                SIGN IN TO PLACE YOUR ORDER
+                {`CHECKOUT · ${formatPeso(subtotal)}`}
               </button>
             )}
-
-            <p className="mt-3 font-sans text-[10px] leading-relaxed text-stone-dim">
-              Orders are requests — no payment is taken here. We confirm each blend personally and
-              arrange payment (GCash or COD) before mixing.
-            </p>
           </div>
         )}
       </aside>

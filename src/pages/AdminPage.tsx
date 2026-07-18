@@ -64,7 +64,7 @@ export function AdminPage() {
       <>
         <Section
           title="Custom blend prices"
-          hint="What the scent builder charges per bottle size at 15% oil, plus the surcharge for stronger blends. Premades have their own prices below."
+          hint="What the scent builder charges per bottle size at 15% oil, plus the surcharge for stronger blends and the flat shipping fee added to every order. Premades have their own prices below."
         >
           <PricingEditor />
         </Section>

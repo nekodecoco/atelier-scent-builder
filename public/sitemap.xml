@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- PLACEHOLDER domain (atelier-n9.vercel.app) - update alongside SITE_URL in src/lib/seo.ts -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://atelier-n9.vercel.app/</loc>
+  </url>
+  <url>
+    <loc>https://atelier-n9.vercel.app/collection</loc>
+  </url>
+  <url>
+    <loc>https://atelier-n9.vercel.app/builder</loc>
+  </url>
+</urlset>

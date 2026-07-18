@@ -1,6 +1,7 @@
 import { LogOut } from 'lucide-react';
 import { AuthForm } from '../components/ui/AuthForm';
 import { OrderList } from '../components/ui/OrderList';
+import { ProfileForm } from '../components/ui/ProfileForm';
 import { SavedBlendList } from '../components/ui/SavedBlendList';
 import { SupabaseSetupNotice } from '../components/ui/SupabaseSetupNotice';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -52,6 +53,11 @@ export function AccountPage() {
                 SIGN OUT
               </button>
             </div>
+
+            <h2 className="mb-4 mt-10 font-display text-2xl text-neutral-900 dark:text-cream">
+              Delivery details
+            </h2>
+            <ProfileForm />
 
             <h2 className="mb-4 mt-10 font-display text-2xl text-neutral-900 dark:text-cream">
               Saved blends

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, Loader2 } from 'lucide-react';
-import { upsertPricing } from '../../../lib/catalog';
+import { upsertPricing, upsertShippingConfig } from '../../../lib/catalog';
 import type { BottleSize } from '../../../lib/recipe';
 import { useCatalogStore } from '../../../store/useCatalogStore';
 
@@ -10,6 +10,7 @@ const labelClass = 'font-sans text-[10px] uppercase tracking-luxe text-stone-dim
 
 export function PricingEditor() {
   const pricing = useCatalogStore((s) => s.pricing);
+  const shipping = useCatalogStore((s) => s.shipping);
   const reload = useCatalogStore((s) => s.load);
 
   const [values, setValues] = useState({
@@ -17,6 +18,7 @@ export function PricingEditor() {
     50: String(pricing.bySize[50]),
     100: String(pricing.bySize[100]),
     surcharge: String(pricing.oilSurchargePerMl),
+    shippingFee: String(shipping.flatFee),
   });
   const [state, setState] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -28,24 +30,28 @@ export function PricingEditor() {
       50: String(pricing.bySize[50]),
       100: String(pricing.bySize[100]),
       surcharge: String(pricing.oilSurchargePerMl),
+      shippingFee: String(shipping.flatFee),
     });
-  }, [pricing]);
+  }, [pricing, shipping]);
 
   const valid =
     ([30, 50, 100] as const).every((size) => Number(values[size]) > 0) &&
-    Number(values.surcharge) >= 0;
+    Number(values.surcharge) >= 0 &&
+    Number(values.shippingFee) >= 0;
 
   const save = async () => {
     if (!valid) return;
     setState('saving');
-    const err = await upsertPricing({
-      bySize: {
-        30: Math.round(Number(values[30])),
-        50: Math.round(Number(values[50])),
-        100: Math.round(Number(values[100])),
-      },
-      oilSurchargePerMl: Math.round(Number(values.surcharge)),
-    });
+    const err =
+      (await upsertPricing({
+        bySize: {
+          30: Math.round(Number(values[30])),
+          50: Math.round(Number(values[50])),
+          100: Math.round(Number(values[100])),
+        },
+        oilSurchargePerMl: Math.round(Number(values.surcharge)),
+      })) ??
+      (await upsertShippingConfig({ flatFee: Math.round(Number(values.shippingFee)) }));
     if (err) {
       setState('idle');
       setError(err);
@@ -59,7 +65,7 @@ export function PricingEditor() {
 
   return (
     <div className="rounded-lg border border-ivory-line bg-white/60 p-6 dark:border-night-line dark:bg-night-soft">
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-5">
         {([30, 50, 100] as BottleSize[]).map((size) => (
           <label key={size} className={labelClass}>
             {size} mL bottle · ₱
@@ -82,12 +88,23 @@ export function PricingEditor() {
             className={`mt-1.5 ${inputClass}`}
           />
         </label>
+        <label className={labelClass}>
+          Shipping · flat fee ₱
+          <input
+            type="number"
+            min={0}
+            value={values.shippingFee}
+            onChange={(e) => setValues((v) => ({ ...v, shippingFee: e.target.value }))}
+            className={`mt-1.5 ${inputClass}`}
+          />
+        </label>
       </div>
 
       <p className="mt-3 font-sans text-[10px] leading-relaxed text-stone-dim">
         These price the custom scent builder at 15% oil. Stronger blends add the surcharge per
         extra mL of fragrance oil — e.g. a 50 mL bottle at 25% adds 5 mL ×
-        ₱{values.surcharge || 0}.
+        ₱{values.surcharge || 0}. The shipping fee is added flat to every order at checkout —
+        0 = free shipping.
       </p>
 
       {error && (
