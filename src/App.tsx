@@ -46,15 +46,19 @@ export default function App() {
       <CartDrawer />
       <main>
         <RouteTransition>
-          {/* location prop keeps the outgoing page rendering during its exit */}
-          <Routes location={location}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/builder" element={<BuilderPage />} />
-            <Route path="/collection" element={<CollectionPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/account" element={<AccountPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-          </Routes>
+          {/* Render prop: pages render the *displayed* location, which trails
+              the live one during the exit so the timer-driven swap decides
+              when the page actually changes. */}
+          {(displayed) => (
+            <Routes location={displayed}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/builder" element={<BuilderPage />} />
+              <Route path="/collection" element={<CollectionPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/admin" element={<AdminPage />} />
+            </Routes>
+          )}
         </RouteTransition>
       </main>
       <footer className="border-t border-black/10 bg-bone px-5 py-16 lg:px-8">

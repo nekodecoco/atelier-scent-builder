@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, type Location } from 'react-router-dom';
 
 /** House easing — matches the .reveal curve in index.css. */
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -9,71 +9,109 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * beneath it around the midpoint. */
 const SWEEP_SECONDS = 1.1;
 
+/** How long the outgoing page's exit plays before the swap. */
+const EXIT_MS = 300;
+const REDUCED_EXIT_MS = 150;
+
 /**
  * Cinematic route transition: the outgoing page scales down and fades, a
  * deep-ink liquid wave sweeps bottom-to-top across the screen (masking the
  * route swap), and the incoming page rises with a spring as the wave clears.
  *
- * Wrap the router outlet with it (App.tsx):
+ * The swap is deliberately timer-driven, NOT AnimatePresence mode="wait".
+ * React Router v7 wraps navigations in React.startTransition, and with
+ * React 18 that combination intermittently loses motion's exit-complete
+ * signal — the new page then never mounts and the URL is stranded on the
+ * old page (the "CHECKOUT click does nothing" bug). A setTimeout always
+ * fires, so this swap cannot wedge; rapid re-navigation mid-exit clears
+ * the timer and the final destination wins.
  *
- *   const location = useLocation();
+ * Contract (App.tsx): children is a render prop receiving the *displayed*
+ * location, which trails the live one by EXIT_MS during a transition:
+ *
  *   <RouteTransition>
- *     <Routes location={location}>…</Routes>
+ *     {(displayed) => <Routes location={displayed}>…</Routes>}
  *   </RouteTransition>
- *
- * Passing `location` to <Routes> is required — it lets AnimatePresence keep
- * rendering the *old* page inside the exiting subtree.
  *
  * Under prefers-reduced-motion everything degrades to a fast crossfade with
  * no wave.
  */
-export function RouteTransition({ children }: { children: ReactNode }) {
+export function RouteTransition({ children }: { children: (displayed: Location) => ReactNode }) {
   const location = useLocation();
   const reducedMotion = useReducedMotion();
 
+  const [displayed, setDisplayed] = useState(location);
+  const [exiting, setExiting] = useState(false);
+  // Skip the enter animation on the very first paint (page load).
+  const firstMount = useRef(true);
+  useEffect(() => {
+    firstMount.current = false;
+  }, []);
+
+  const exitMs = reducedMotion ? REDUCED_EXIT_MS : EXIT_MS;
+
+  useEffect(() => {
+    if (location.key === displayed.key) return;
+    if (location.pathname === displayed.pathname) {
+      // Same page (re-click, or back mid-exit): sync without animating, and
+      // un-exit in case we were caught mid-fade.
+      setDisplayed(location);
+      setExiting(false);
+      return;
+    }
+    setExiting(true);
+    const timer = setTimeout(() => {
+      setDisplayed(location);
+      setExiting(false);
+    }, exitMs);
+    return () => clearTimeout(timer);
+  }, [location, displayed, exitMs]);
+
   if (reducedMotion) {
     return (
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-        >
-          {children}
-        </motion.div>
-      </AnimatePresence>
+      <motion.div
+        key={displayed.pathname}
+        initial={firstMount.current ? false : { opacity: 0 }}
+        animate={{ opacity: exiting ? 0 : 1 }}
+        transition={{ duration: 0.15 }}
+      >
+        {children(displayed)}
+      </motion.div>
     );
   }
 
   return (
     <>
       <WaveOverlay trigger={location.pathname} />
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, y: 24 }}
-          animate={{
-            opacity: 1,
-            y: 0,
-            transition: {
-              delay: 0.4,
-              type: 'spring',
-              stiffness: 280,
-              damping: 30,
-              opacity: { delay: 0.4, duration: 0.35, ease: 'easeOut' },
-            },
-          }}
-          exit={{
-            opacity: 0,
-            scale: 0.98,
-            transition: { duration: 0.3, ease: EASE },
-          }}
-        >
-          {children}
-        </motion.div>
-      </AnimatePresence>
+      {/* Keyed by the displayed page: the swap remounts this div, which plays
+          the enter animation from `initial`; the exit is just an animate
+          target on the outgoing instance before the timer swaps it. */}
+      <motion.div
+        key={displayed.pathname}
+        initial={firstMount.current ? false : { opacity: 0, y: 24 }}
+        animate={
+          exiting
+            ? {
+                opacity: 0,
+                scale: 0.98,
+                transition: { duration: EXIT_MS / 1000, ease: EASE },
+              }
+            : {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: {
+                  delay: 0.4,
+                  type: 'spring',
+                  stiffness: 280,
+                  damping: 30,
+                  opacity: { delay: 0.4, duration: 0.35, ease: 'easeOut' },
+                },
+              }
+        }
+      >
+        {children(displayed)}
+      </motion.div>
     </>
   );
 }
