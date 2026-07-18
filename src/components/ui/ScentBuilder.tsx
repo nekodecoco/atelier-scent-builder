@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookmarkPlus, Dices, Droplets, RotateCcw, ShoppingBag } from 'lucide-react';
 import {
@@ -14,7 +14,6 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useCartStore';
 import { useCatalogStore } from '../../store/useCatalogStore';
 import { useScentStore } from '../../store/useScentStore';
-import { Scene } from '../three/Scene';
 import { CustomNameInput } from './CustomNameInput';
 import { IngredientPicker } from './IngredientPicker';
 import { NoteSlider } from './NoteSlider';
@@ -24,6 +23,23 @@ import { ScentConcierge } from './ScentConcierge';
 import { ScentDescription } from './ScentDescription';
 import { ScentProfileCard } from './ScentProfileCard';
 import { ScentTwinCard } from './ScentTwinCard';
+
+// Lazy so three.js (+fiber/drei) ships as its own async chunk — /builder is the
+// only WebGL entry point, and a static import here would drag the whole 3D stack
+// into the main bundle for every route. Keep any import of components/three/*
+// dynamic; one static path re-merges it.
+const Scene = lazy(() => import('../three/Scene').then((m) => ({ default: m.Scene })));
+
+/** Fills the canvas box while the three chunk loads; bg matches the Canvas clear color. */
+function SceneFallback() {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-[#ece7d8]">
+      <span className="animate-pulse font-sans text-[10px] tracking-luxe text-stone-dim">
+        PREPARING THE BOTTLE
+      </span>
+    </div>
+  );
+}
 
 const SURPRISE_NAMES = [
   'Velvet Dawn', 'Midnight Garden', 'Manila Sunrise', 'Golden Monsoon',
@@ -114,7 +130,9 @@ export function ScentBuilder() {
 
       <div className="mt-12 grid gap-8 lg:grid-cols-[5fr_6fr]">
         <div className="relative h-[420px] overflow-hidden rounded-lg border border-ivory-line dark:border-night-line sm:h-[520px] lg:sticky lg:top-20 lg:h-[600px] lg:self-start">
-          <Scene />
+          <Suspense fallback={<SceneFallback />}>
+            <Scene />
+          </Suspense>
           <span className="pointer-events-none absolute left-4 top-4 font-sans text-[10px] tracking-luxe text-stone-dim">
             DRAG TO ROTATE
           </span>
