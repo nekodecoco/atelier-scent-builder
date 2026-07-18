@@ -1,4 +1,5 @@
 import type { CartItem } from '../store/useCartStore';
+import { normalizeAddress, type ShippingAddress } from './address';
 import { supabase } from './supabase';
 
 export interface OrderRecord {
@@ -8,41 +9,57 @@ export interface OrderRecord {
   total: number;
   currency: string;
   items: CartItem[];
+  /** The address this order ships to, snapshotted at checkout. */
+  shipping: ShippingAddress | null;
 }
 
+/**
+ * Note there is deliberately no schema-tolerant retry here. Tolerance is right for
+ * admin-optional catalog data, where a missing column has a sensible default — but
+ * an order silently written without a shipping address is strictly worse than a
+ * failed order, because nobody can ship it and nobody finds out. Fail loudly and
+ * let the owner run the SQL.
+ *
+ * An out-of-stock rejection from the orders_apply_stock trigger also surfaces
+ * through `error` here: Postgres puts the raise-exception text into error.message.
+ */
 export async function placeOrder(
   items: CartItem[],
   total: number,
+  shipping: ShippingAddress,
 ): Promise<{ orderId?: string; error?: string }> {
   if (!supabase) return { error: 'Supabase is not configured.' };
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) return { error: 'You need to sign in to place an order.' };
+  try {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) return { error: 'You need to sign in to place an order.' };
 
-  let { data, error } = await supabase
-    .from('orders')
-    .insert({
-      user_id: userData.user.id,
-      email: userData.user.email ?? null,
-      total,
-      currency: 'PHP',
-      items,
-    })
-    .select('id')
-    .single();
-
-  // the email column arrives with the admin migration — keep checkout working
-  // on databases that haven't run it yet
-  if (error && /email/.test(error.message)) {
-    ({ data, error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
-      .insert({ user_id: userData.user.id, total, currency: 'PHP', items })
+      .insert({
+        user_id: userData.user.id,
+        email: userData.user.email ?? null,
+        total,
+        currency: 'PHP',
+        items,
+        shipping,
+      })
       .select('id')
-      .single());
-  }
+      .single();
 
-  if (error) return { error: error.message };
-  return { orderId: data!.id as string };
+    if (error) return { error: error.message };
+    return { orderId: data.id as string };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Could not place your order.' };
+  }
+}
+
+/** Load boundary for an order row: the jsonb address is normalized on the way out. */
+export function toOrderRecord(row: Record<string, unknown>): OrderRecord {
+  return {
+    ...(row as unknown as OrderRecord),
+    shipping: row.shipping ? normalizeAddress(row.shipping) : null,
+  };
 }
 
 export async function fetchMyOrders(): Promise<{ orders?: OrderRecord[]; error?: string }> {
@@ -57,12 +74,12 @@ export async function fetchMyOrders(): Promise<{ orders?: OrderRecord[]; error?:
     // and stops admin accounts (which RLS lets read every order) seeing others' here.
     const { data, error } = await supabase
       .from('orders')
-      .select('id, created_at, status, total, currency, items')
+      .select('id, created_at, status, total, currency, items, shipping')
       .eq('user_id', userData.user.id)
       .order('created_at', { ascending: false });
 
     if (error) return { error: error.message };
-    return { orders: (data ?? []) as OrderRecord[] };
+    return { orders: (data ?? []).map(toOrderRecord) };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Could not load your orders.' };
   }

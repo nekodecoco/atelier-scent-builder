@@ -7,6 +7,7 @@ import { useCartSync } from './hooks/useCartSync';
 import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 import { BuilderPage } from './pages/BuilderPage';
+import { CheckoutPage } from './pages/CheckoutPage';
 import { CollectionPage } from './pages/CollectionPage';
 import { LandingPage } from './pages/LandingPage';
 import { useAuthStore } from './store/useAuthStore';
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/builder" element={<BuilderPage />} />
             <Route path="/collection" element={<CollectionPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
